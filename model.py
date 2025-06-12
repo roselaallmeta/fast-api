@@ -3,12 +3,22 @@ from pydantic import BaseModel
 
 
 class StartUp(BaseModel):
+    id : int
+    name : str
 
-    startupId : int
-    startupName : str
+    # founderId : str
+    # description : str
+    # industryId : enum
 
 
-    #founderName : str
-    #description : str
-    #industry : enum
+
+class User(BaseModel):
+    id : int
+    fullName : str
+    
+    # birthday: date
+
+    # founderId : str
+    # description : str
+    # industryId : enum
 

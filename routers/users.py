@@ -1,31 +1,33 @@
 from fastapi import APIRouter
-from ..model import StartUp 
+from ..model import User 
 
 router = APIRouter(
-    prefix= "/startups",
+    prefix= "/users",
     responses={404: {"description": "Not found"}}
 )
 
-# Type i ketij array eshte StartUp
-startups = []
+# Type i ketij array eshte User
+users = []
 
 
-#get all startups
+#get all users
 @router.get("/")
-async def get():
-    return {"startups" : startups}
+async def get_users():
+    return {"users" : users}w
+
+
 
 #creating a startup
 @router.post("/") 
-async def create(startup: StartUp):
-    startups.append(startup)
+async def create(startup: User):
+    users.append(startup)
     return {"message" : "Startup has sucessfully been added."}
 
 
 #getting a single startup
 @router.get("/{id}")
 async def get(id : int): 
-    for startup in startups :
+    for startup in users :
         if (startup.id == id):
             return {"startup" : startup}
 
@@ -35,9 +37,9 @@ async def get(id : int):
 #deleting a single startup
 @router.delete("/{id}")
 async def delete(id : int):
-    for startup in startups:
+    for startup in users:
         if startup.id == id:
-            startups.remove(startup)
+            users.remove(startup)
 
             return {"message" : "Startup has been deleted"}
     
@@ -48,7 +50,7 @@ async def delete(id : int):
 #updating a startup
 @router.put("/{id}")
 async def update(id : int , startup_new : StartUp):
-    for startup in startups :
+    for startup in users :
         if startup.id == id:
             startup = startup_new
 
