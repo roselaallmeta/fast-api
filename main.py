@@ -5,6 +5,4 @@ app = FastAPI()
 
 @app.get("/about")
 def read_root():
-    return {"Main page."}
-
-    
+    return {"Main page - Rosi"}
