@@ -12,7 +12,3 @@ class StartUp(BaseModel):
     #description : str
     #industry : enum
 
-    
-router = APIRouter (
-    prefix ="/startup"
-)
