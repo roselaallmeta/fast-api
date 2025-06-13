@@ -15,6 +15,7 @@ startups = []
 async def get():
     return {"startups" : startups}
 
+
 #creating a startup
 @router.post("/") 
 async def create(startup: StartUp):
@@ -48,10 +49,9 @@ async def delete(id : int):
 #updating a startup
 @router.put("/{id}")
 async def update(id : int , startup_new : StartUp):
-    for startup in startups :
+    for index, startup in enumerate(startups):
         if startup.id == id:
-            startup = startup_new
-
-            return {"startup": startup}
+            startups[index] = startup_new
+            return {"startup": startup_new}
 
     return {"No startup found to update"}
