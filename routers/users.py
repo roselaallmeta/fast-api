@@ -15,6 +15,11 @@ async def get_users():
     return {"users" : users}
 
 
+@router.get("/current")
+async def read_user_me():
+    return {"user_id": "the current user"}
+
+
 #creating a user
 @router.post("/") 
 async def create(user: User):
@@ -23,29 +28,29 @@ async def create(user: User):
 
 
 #getting a single user
-@router.get("/{id}")
-async def get(id : int): 
+@router.get("/{user_id}")
+async def get(user_id : int): 
     for user in users :
-        if (user.id == id):
+        if (user_id.id == id):
             return {"user" : user}
 
     return {"message" : "No user found."}
 
 
-@router.get("/{fullName}")
-async def get(fullName : str): 
+@router.get("/{user_name}")
+async def get(user_name : str): 
     for user in users :
-        if (user.fullName == fullName):
+        if (user.user_name == user_name):
             return {"user" : user}
 
     return {"message" : "No user found."}
 
 
 #deleting a single user
-@router.delete("/{id}")
+@router.delete("/{user_id}")
 async def delete(id : int):
     for user in users:
-        if user.id == id:
+        if user.user_id == user_id:
             users.remove(user)
 
             return {"message" : "User has been deleted"}
@@ -53,10 +58,10 @@ async def delete(id : int):
     return {"message" : "User not found"}
 
 
-@router.delete("/{fullName}")
-async def delete(fullName : str):
+@router.delete("/{user_name}")
+async def delete(user_name : str):
     for user in users:
-        if user.fullName == fullName:
+        if user.user_name == user_name:
             users.remove(user)
 
             return {"message" : "User has been deleted"}
@@ -65,10 +70,10 @@ async def delete(fullName : str):
 
 
 #updating a user
-@router.put("/{id}")
-async def update(id : int , user_new : User):
+@router.put("/{user_id}")
+async def update(user_id : int , user_new : User):
     for index, user in enumerate(users):
-        if user.id == id:
+        if user.user_id == id:
             users[index] = user_new
             
             return {"user": user_new}
@@ -77,10 +82,10 @@ async def update(id : int , user_new : User):
 
 
 
-@router.put("/{fullName}")
-async def update(fullName : str , user_new : User):
+@router.put("/{user_name}")
+async def update(user_name : str , user_new : User):
     for index, user in enumerate(users):
-        if user.fullName == fullName:
+        if user.user_name == user_name:
             users[index] = user_new
             
             return {"user": user_new}
