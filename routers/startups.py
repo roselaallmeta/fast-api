@@ -1,6 +1,8 @@
-from fastapi import APIRouter, FastApi, Query
+from fastapi import APIRouter, FastAPI, Query
 from ..model import StartUp 
 from typing import Annotated
+
+from db import get_connection
 
 
 
@@ -9,85 +11,154 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
-# Type i ketij array eshte StartUp
-# startups = [
-
-#     {   'id': 1 ,
-#         'name' : 'chatgpt' , 
-#         'description' : 'some text' , 
-#         'founders_name' : 'sam' , 
-#         'email' : 'test@gmail.com' , 
-#         'website_url ' : 'fjnjdnjn' , 
-#         'total_funding': 3324.2 , 
-#         'is_active' : 'true'},
 
 
-#     {   'id': 2 ,
-#         'name' : 'n28' , 
-#         'description' : 'some text 2' , 
-#         'founders_name' : 'some guy' , 
-#         'email' : 'test2@gmail.com' , 
-#         'website_url ' : 'fxkkxjn' , 
-#         'total_funding': 578754.3 , 
-#         'is_active' : 'false'}
-
-# ]
+startups = []
 
 
+#creating  a valid startup in the database
+@router.post("/") 
+async def create_startup(startup: StartUp):
 
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute("""
+                       INSERT INTO startups(id, name , created_at, invested_at , description, founders_name, email, website_url, total_funding, is_active) 
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s , %s)
+                       """ (startup.id , startup.name , startup.created_at, startup.invested_at, startup.description, startup.founders_name, startup.email, startup.website_url, startup.total_funding, startup.is_active))
+        
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        return {"message": "Startup successfully added"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+#retrieve the startup by name 
 @router.get("/{name}")
 async def get_startup_name(
+    name: Annotated[str]
+):
+    
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "SELECT name FROM startups WHERE name = %s"
+
+    cursor.execute(query, (name,))
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if result:
+        return {"startup": result, "message": "Startup found"}
+    else:
+        raise HTTPException(status_code=404, detail="No startup with that name.")
+    
+
+
+
+
+
+@router.get("/{id}")
+async def get_startup_id(
     name: Annotated[str, Path(min_length=2)]
 ):
     
     connection = get_connection()
-    cursor = conn.cursor()
-    query = "SELECT name FROM startups WHERE name = %s"
+    cursor = connection.cursor()
+    query = "SELECT id FROM startups WHERE id = %s"
 
-    cursor.execute()
+    cursor.execute(query, (id,))
 
+    result = cursor.fetchone()
 
+    cursor.close()
+    connection.close()
 
-   
+    if result:
+        return {"startup": result, "message": "Startup found"}
+    else:
+        raise HTTPException(status_code=404, detail="No startup with that id.")
     
 
 
 
+# te marr nje startup ta marresh  nga emri i founderit
+@router.get("/{founders_name}")
+async def get_founder_name(
+    founders_name: Annotated[str]
+):
+    
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "SELECT founders_name FROM startups WHERE founders_name = %s"
+
+    cursor.execute(query, (founders_name,))
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if result:
+        return {"founders_name": result, "message": "Startup found by founders name."}
+    else:
+        raise HTTPException(status_code=404, detail="No startup found.")
+
+
     
 
 
-    
-
-
-
-#get all startups
+#get all startups as a list
 @router.get("/")
 async def get_startup():
 
-    cursor.execute(SELECT * FROM startups)
-    return {"startups" : startups} # ti kthej si liste - me id , name , dhe cdo atribut qe ka
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "SELECT * FROM startups"
+
+    cursor.execute(query)
+    result = cursor.fetchall() 
+
+    if result:
+        return {"startups" : startups}
+
+    else:
+        raise HTTPException(status_code=404, detail="No startup listed.")
+    
+
+    # nje funksionalitet qe ti marri nga me i vjetri te me i riu
 
 
 
 
-#getting a single startup
-@router.get("/{id}")
-async def get_startup(id: int): 
-
-    cursor.execute(SELECT id FROM startups)
-    for startup in startups:
-        if (startup.id == id):
-            return {"startup by its id" : startup}
-
-    return {"message" : "No startup found."}
 
 
 
-#creating a startup
-@router.post("/") 
-async def create(startup: StartUp):
-    startups.append(startup)
-    return {"message" : "Startup has sucessfully been added."}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -102,11 +173,13 @@ async def update(id : int , startup_new : StartUp):
     return {"No startup found to update"}
 
 
+
+
+
 @router.put("/update/{id}")
 async def update_startup(id: int , updated_startup : dict):
     for startup in startups:
         if startup['id'] == id:
-
 
 
 

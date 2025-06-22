@@ -1,5 +1,10 @@
-from fastapi import APIRouter
-from ..model import Investment 
+from fastapi import APIRouter, HTTPException
+from fastapi import FastAPI, File, UploadFile
+from ..model import Investment
+from datetime import date, timedelta
+from ..database import get_connection
+
+
 
 router = APIRouter(
     prefix= "/investments",
@@ -7,14 +12,73 @@ router = APIRouter(
 )
 
 
+
+
 # Type i ketij array eshte investment
 investments = []
 
-@router.post("/")  # per ta krijuar
-async def create_investment(investment: Investment): #async sepse po merr nga db
-    investments.append(investment)
 
-    return {"message" : "Investment has sucessfully been added."}
+def calculate_age(birthdate: date) -> int:
+    today = date.today()
+    return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+
+
+def is_document_expired(expiry_date : date) -> bool:
+    today = date.today()
+    return expiry_date > today + timedelta(days=90)
+
+# timedelta(days=90) - a time period of 90 days
+# today + timedelta(days=90) - the date 90 days from now
+
+   
+
+@router.post("/")  # per ta krijuar
+async def create_investment(investment : Investment, user: User): #async sepse po merr nga db
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        
+        age = calculate_age(user.date_of_birth) # should date of birth also be declared in the investment model
+        if age < 18:
+            raise HTTPException(status_code=400, detail="Investor must be at least 18 years old.")
+        
+        
+        expiry = is_document_expired()
+
+
+        cursor.execute("""
+                       INSERT INTO investments(id, name , amount, equity_percent , currency, invested_on, notes) 
+                       VALUES (%s, %s, %s, %s, %s, %s, %s)
+                       """ ,
+                       (investment.id , 
+                        investment.name, 
+                        investment.amount, 
+                        investment.equity_percent,
+                        investment.currency, 
+                        investment.invested_on, 
+                        investment.notes))
+        
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+        
+
+				# conditions
+                # kur nje investor investon diku, - investor duhet te jete mbi 18 vjec qe te bej nje investim - done
+                # i duhet te japi nje mjet identifikimi per t ber nje investim
+
+        return {"message": "Investment successfully added"}
+    
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+    
+    
+   
 
 
 @router.get("/{name}")
