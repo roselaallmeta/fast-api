@@ -8,9 +8,9 @@ from datetime import datetime
 class StartUp(BaseModel):
     id : int
     name : str
-    created_at : date  # datetime is a type in pythohn , while timestamp is a type in mysql
-    invested_at : date
-    description : str (max_length = 5000)
+    created_at : datetime  # datetime is a type in pythohn , while timestamp is a type in mysql
+    invested_at : datetime
+    description : str
     founders_name : str
     email : str
    # funding_stage : Enum
@@ -28,9 +28,9 @@ class StatusEnum(str, Enum): # kur rregjistrohet nje user/startup -
 class User(BaseModel): # si ta bej qe te identifikoj ca cdo user mund t bej - psh nj investitor ben x , nje founder ben x
     user_id : int
     user_name : str
-    identification_document : File
+    #identification_document : File - file nuk eshte data type, beje tek endpointi
     identification_number : str
-    date_of_birth : date
+    date_of_birth : datetime
 
 class UserRoles(BaseModel):
     id : int
@@ -50,8 +50,8 @@ class UserProfile(BaseModel):
 class Investment(BaseModel):
     id: int
     name: str
-    date_of_birth : date
-    identification_document : Literal["Passport" , "national_id", "drivers license"]
+    date_of_birth : datetime
+    #identification_document : Enum["Passport" , "national_id", "drivers license"]
     identification_number: str 
     capital_available : float
     amount_investing: float
@@ -78,14 +78,14 @@ class Document(BaseModel):
     id: int
     name : str
     size: int
-    issue_date : date
-    expiry_date : date
+    issue_date : datetime
+    expiry_date : datetime
     content : bytes # duhet ta besh ne databaze si longblob qe te ruhen te dhenat e dokumentit
     content_type: str
     uploaded_by: str # te jete mandatory- qe kur behet upload nje file te jete bashke me emrin e personit qe i ben upload
-    uploaded_at: datetime = Field(default_factory=datetime.timezone-aware)
+    uploaded_at: datetime #= Field(default_factory=datetime.timezone-aware)
     description: Optional[str] = None
-    status: Optional[str] = Field(default="pending")
+    status: str # Optional[str] = Field(default="pending")
 
 
 

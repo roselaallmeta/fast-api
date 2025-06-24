@@ -2,7 +2,7 @@ from fastapi import APIRouter, FastAPI, Query
 from ..model import StartUp 
 from typing import Annotated
 
-from db import get_connection
+#from app.db import get_connection
 
 
 
@@ -42,7 +42,7 @@ async def create_startup(startup: StartUp):
 #retrieve the startup by name 
 @router.get("/{name}")
 async def get_startup_name(
-    name: Annotated[str]
+    name: str
 ):
     
     connection = get_connection()
@@ -63,12 +63,9 @@ async def get_startup_name(
     
 
 
-
-
-
 @router.get("/{id}")
 async def get_startup_id(
-    name: Annotated[str, Path(min_length=2)]
+    id: int
 ):
     
     connection = get_connection()
@@ -93,7 +90,7 @@ async def get_startup_id(
 # te marr nje startup ta marresh  nga emri i founderit
 @router.get("/{founders_name}")
 async def get_founder_name(
-    founders_name: Annotated[str]
+    founders_name: str
 ):
     
     connection = get_connection()
@@ -139,29 +136,6 @@ async def get_startup():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #updating a startup
 @router.put("/update/{id}")
 async def update(id : int , startup_new : StartUp):
@@ -176,10 +150,12 @@ async def update(id : int , startup_new : StartUp):
 
 
 
-@router.put("/update/{id}")
-async def update_startup(id: int , updated_startup : dict):
-    for startup in startups:
-        if startup['id'] == id:
+# @router.put("/update/{id}")
+# async def update_startup(id: int , updated_startup : dict):
+#     for startup in startups:
+#         if startup['id'] == id:
+
+    
 
 
 

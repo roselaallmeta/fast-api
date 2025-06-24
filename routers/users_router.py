@@ -1,5 +1,9 @@
 from fastapi import APIRouter
 from ..model import User 
+from typing import List, Optional
+from app import postgres
+from src.users.users_schema import User
+
 
 router = APIRouter(
     prefix= "/users",
@@ -8,6 +12,7 @@ router = APIRouter(
 
 # Type i ketij array eshte User
 users = []
+
 
 #get all users
 @router.get("/")
