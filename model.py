@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-class StartUp(BaseModel):
+class Venture(BaseModel):
     id : int
     name : str
     created_at : datetime  # datetime is a type in pythohn , while timestamp is a type in mysql
@@ -54,7 +54,7 @@ class Investment(BaseModel):
     #identification_document : Enum["Passport" , "national_id", "drivers license"]
     identification_number: str 
     capital_available : float
-    amount_investing: float
+    amount_investing: float 
     equity_percent : float
     #currency : ENUM
     invested_on : datetime
@@ -86,6 +86,17 @@ class Document(BaseModel):
     uploaded_at: datetime #= Field(default_factory=datetime.timezone-aware)
     description: Optional[str] = None
     status: str # Optional[str] = Field(default="pending")
+    
+
+
+class BankingDetails(BaseModel):
+    bank_account_number: str
+    bic: str
+    iban: str
+    bank_name : str
+    bank_country : str
+    currency: enumerate
+    is_bank_verified : bool
 
 
 
