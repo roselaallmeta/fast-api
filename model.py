@@ -1,3 +1,6 @@
+from dataclasses import Field
+from decimal import Decimal
+import decimal
 from enum import Enum
 from typing import Optional
 from fastapi import FastAPI, File
@@ -5,41 +8,111 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-class Venture(BaseModel):
-    id : int
-    name : str
-    created_at : datetime  # datetime is a type in pythohn , while timestamp is a type in mysql
-    invested_at : datetime
-    description : str
-    founders_name : str
-    email : str
-   # funding_stage : Enum
-    website_url :str
-    total_funding : float
-    is_active : bool # bool is a python type , while boolean is a mysql type
 
-
-class StatusEnum(str, Enum): # kur rregjistrohet nje user/startup - 
+class StatusEnum(str, Enum):  
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
+    
+
+class InvestmentTypeEnum(str, Enum):  
+    equity = "equity"
+    loan = "loan"
+    grant = "grant"
+    
+
+class IndustryEnum(str, Enum):
+    technology = "technology"
+    finance = "finance"
+    healthcare = "healthcare"
+    education = "education"
+    energy = "energy"
+    real_estate = "real_estate"
+    transportation = "transportation"
+    retail = "retail"
+    other = "other"
+    media = "media"
+    
+
+class FundingStageEnum(str, Enum):
+    pre_seed = "pre_seed"
+    seed = "seed"
+    series_a = "series_a"
+    series_b = "series_b"
+    series_c = "series_c"
+    series_d_plus = "series_d_plus"
+    venture_round = "venture_round"
+    private_equity = "private_equity"
+    debt_financing = "debt_financing"
+    grant = "grant"
+    ipo = "ipo"
+    acquired = "acquired"
+    
+
+class CurrencyEnum(str, Enum):
+    USD = "USD"
+    EUR = "EUR"
+    JPY = "JPY"
+    ALL = "ALL"
+    GBP = "GBP"
+    CHF = "CHF"
+    CAD = "CAD"
+    AUD = "AUD"
+    CNY = "CNY"
+    SEK = "SEK"
+    NZD = "NZD"
+    KRW = "KRW"
+    SGD = "SGD"
+    NOK = "NOK"
+    INR = "INR"
 
 
-class User(BaseModel): # si ta bej qe te identifikoj ca cdo user mund t bej - psh nj investitor ben x , nje founder ben x
-    user_id : int
-    user_name : str
-    #identification_document : File - file nuk eshte data type, beje tek endpointi
-    identification_number : str
-    date_of_birth : datetime
+class GenderEnum(str, Enum):
+    male = "male"
+    female = "female"
+    other = "other"
+    
 
-class UserRoles(BaseModel):
+class UserRoleEnum(str, Enum):
+    founder = "founder"
+    investor = "investor"
+    guest = "guest"
+    institution = "institution"
+    admin = "admin"
+    business = "business"
+
+
+class Venture(BaseModel):
     id : int
-    #user_role : ENUM
+    name : str
+    created_at : datetime
+    phone_number : str
+    email : str
+    description: str
+    industries: IndustryEnum
+    created_at : datetime
+    funding_stage : FundingStageEnum
+    description : str
+    founders_name : str
+    email : str
+    website_url :str
+    funding_goal: decimal.Decimal
+    total_funding: decimal.Decimal
+    valuation: decimal.Decimal
+    is_active : bool
+
+
+class User(BaseModel):
+    name : str
+    role : UserRoleEnum 
+    email : str
+    gender : GenderEnum
+
     
         
 class UserProfile(BaseModel):
+    id: int
     email: str
-    #gender : Enum
     phone_number : str
     created_at : datetime
     updated_at : datetime
@@ -49,21 +122,25 @@ class UserProfile(BaseModel):
 
 class Investment(BaseModel):
     id: int
-    name: str
-    date_of_birth : datetime
-    #identification_document : Enum["Passport" , "national_id", "drivers license"]
-    identification_number: str 
-    capital_available : float
-    amount_investing: float 
-    equity_percent : float
-    #currency : ENUM
+    user_id : int
+    venture_id : int
+    title: str
+    amount: decimal.Decimal
+    investment_type : InvestmentTypeEnum
+    equity_percent : decimal.Decimal
+    currency: CurrencyEnum
     invested_on : datetime
-    notes : str
+    description : str
+    
 
-
-class Industries(BaseModel):
-    id : int
-    name : str
+class PitchDecks(BaseModel): # inseroje ne db
+    id: int
+    title: str
+    file_url: str
+    description: str
+    created_at : datetime
+    updated_at : datetime
+    
 
 
 class Team(BaseModel): # inseroje ne db
@@ -76,26 +153,29 @@ class Team(BaseModel): # inseroje ne db
 
 class Document(BaseModel):
     id: int
-    name : str
+    title : str
     size: int
     issue_date : datetime
-    expiry_date : datetime
-    content : bytes # duhet ta besh ne databaze si longblob qe te ruhen te dhenat e dokumentit
+    expiry_date : datetime 
     content_type: str
-    uploaded_by: str # te jete mandatory- qe kur behet upload nje file te jete bashke me emrin e personit qe i ben upload
-    uploaded_at: datetime #= Field(default_factory=datetime.timezone-aware)
-    description: Optional[str] = None
-    status: str # Optional[str] = Field(default="pending")
+    uploaded_by: str 
+    uploaded_at: datetime 
+    description: str
+    status: StatusEnum 
     
 
 
+
 class BankingDetails(BaseModel):
-    bank_account_number: str
+    id: int
+    user_id : int
+    account_number: str
     bic: str
     iban: str
     bank_name : str
     bank_country : str
-    currency: enumerate
+    currency: CurrencyEnum
+    balance : decimal.Decimal
     is_bank_verified : bool
 
 

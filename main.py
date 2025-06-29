@@ -1,51 +1,48 @@
-from fastapi import FastAPI
-from .routers import startups
-from .routers import users_router
-from .routers import investments
-from pydantic import BaseModel
-from typing import Union
-
-
-
-
-app = FastAPI()
-
-app.include_router(startups.router)
-app.include_router(users_router.router)
-app.include_router(investments.router)
-
-
-@app.get("/about")
-def read_root():
-    return {"Main page"}
-
-
-import uvicorn
-from fastapi import FastAPI 
 from contextlib import asynccontextmanager
+from fastapi import FastAPI
+# from .routers import (
+#     industries,
+#     investment_validation,
+#     ventures,
+#     user,
+#     user_profiles,
+#     investments,
+# )
+from .routers import (user)
 
-from src.commons.postgres import database
+
+
+from .src.commons.postgres import database
+import uvicorn
+from fastapi import FastAPI
+
+
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#      await database.connect()
+#    yield
+#     await database.disconnect()
+#     pool = await asyncpg.create_pool(dsn=DATABASE_URL)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-     await database.connect()
-     yield
-     await database.disconnect()
+    await database.connect()
+    yield
+    await database.disconnect()
 
-app = FastAPI()
+
 app = FastAPI(lifespan=lifespan)
 
-if __name__ == "__main__":
-      uvicorn.run(app, host="0.0.0.0")
+app.include_router(user.router)
 
+# app.include_router(industries.router)
+# app.include_router(investment_validation.router)
+# app.include_router(ventures.router)
+# app.include_router(user_profiles.router)
+# app.include_router(investments.router)
 
+# app.include_router(user_profiles.router)
 
-
-
-
-
-
-
-
-
+if __name__ == "__main__ ":
+    uvicorn.run(app, host="5433")
