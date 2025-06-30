@@ -1,117 +1,137 @@
 from fastapi import APIRouter
-from ..model import User 
+from ..model import User
 from ..src.commons.postgres import database
 from typing import List, Optional
+from app.routers import user
+from app.db import database
 
 
-router = APIRouter(
-    prefix= "/users",
-    responses={404: {"description": "Not found"}}
-)
+router = APIRouter(prefix="/users", responses={404: {"description": "Not found"}})
 
 
-
+@router.get("/")
 async def get_all_users(limit: int, offset: int) -> List[User]:
     query = "SELECT name, email, role, gender FROM main.users LIMIT $1 OFFSET $2"
-    
+
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
-        users = [User(name=record["name"], email=record['email'], role=record['role'], gender=record['gender']) for record in rows]
+        users = [
+            User(
+                name=record["name"],
+                email=record["email"],
+                role=record["role"],
+                gender=record["gender"],
+            )
+            for record in rows
+        ]
         return users
-    
 
+
+@router.get("/{role}")
 async def get_users_by_role(limit: int, offset: int) -> List[User]:
     query = "SELECT name, email, role, gender FROM main.users WHERE role = $1"
-    
+
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
-        users = [User(name=record["name"], email=record['email'], role=record['role'], gender=record['gender']) for record in rows]
+        users = [
+            User(
+                name=record["name"],
+                email=record["email"],
+                role=record["role"],
+                gender=record["gender"],
+            )
+            for record in rows
+        ]
         return users
 
 
-
+@router.get("/{id}")
 async def get_user_by_id(limit: int, offset: int) -> User:
     query = "SELECT name, email, role, gender FROM main.users LIMIT $1 OFFSET $2"
-    
+
     async with database.pool.acquire() as connection:
         rows = await connection.fetchrow(query, limit, offset)
-        users = [User(name=record["name"], email=record['email'], role=record['role'], gender=record['gender']) for record in rows]
+        users = [
+            User(
+                name=record["name"],
+                email=record["email"],
+                role=record["role"],
+                gender=record["gender"],
+            )
+            for record in rows
+        ]
         return users
-    
 
+
+@router.get("/{name}")
 async def get_user_by_name(user: User) -> User | None:
     query = """SELECT name, email, role, gender FROM main.users WHERE name = $1"""
-    
+
     async with database.pool.acquire() as connection:
         row = await connection.fetchrow(query, user.name)
         if row:
             return User(
-                name=row["name"], 
-                email=row['email'], 
-                role=row['role'], 
-                gender=row['gender'])
+                name=row["name"],
+                email=row["email"],
+                role=row["role"],
+                gender=row["gender"],
+            )
         return None
-    
 
 
+@router.put("/")
 async def update_user(user: User) -> User | None:
     query = "UPDATE main.users SET name = $1, email = $2, gender = $3, role = $4 WHERE id = $5"
-    
+
     async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, user.name, user.email, user.gender, user.role )
+        row = await connection.fetchrow(
+            query, user.name, user.email, user.gender, user.role
+        )
         if row:
             return User(
-                name=row["name"], 
-                email=row['email'], 
-                role=row['role'], 
-                gender=row['gender'])
+                name=row["name"],
+                email=row["email"],
+                role=row["role"],
+                gender=row["gender"],
+            )
         return None
 
 
-
+@router.post("/")
 async def insert_user(user: User):
     query = "INSERT INTO main.users (name, email, gender, role) VALUES ($1, $2, $3, $4)"
-    
+
     async with database.pool.acquire() as connection:
         await connection.execute(query, user.name, user.email, user.gender, user.role)
-        
 
 
+@router.delete("/")
 async def delete_user(user: User):
     query = "DELETE FROM main.users WHERE (name = $1 AND email = $2 AND gender = $3 ANDrole = $4)"
-    
+
     async with database.pool.acquire() as connection:
         await connection.execute(query, user.name, user.email, user.gender, user.role)
-        
-
-        
-
-        
-
-
 
 
 # -----------------------------------------
+
 
 @router.get("/")
 async def get(limit: Optional[int] = 10, offset: Optional[int] = 0):
     return await get_all_users(limit, offset)
 
+
 @router.post("/")
 async def post(user: User):
     return await insert_user(user)
-
 
     # query = "SELECT name, email FROM users WHERE email = $1"
     # async with database.pool.acquire() as connection:
     #     row = await connection.fetchrow(query, email)
     #     if row is not None:
-    #         user = User(name=row["name"], email=row["email"]) 
+    #         user = User(name=row["name"], email=row["email"])
     #         return user
     #     return None
-
-
-
 
 
 # @router.get("/{id}")
@@ -120,7 +140,6 @@ async def post(user: User):
 #     if row is None:
 #         raise HTTPException(status_code=404, detail="User not found")
 #     return dict(row)
-
 
 
 # @router.delete("/{id}")
@@ -135,26 +154,12 @@ async def post(user: User):
 # @router.put("/{id}")
 
 
-
-
-
-
-
-
-
-
-
-
-
 # @router.delete("/")
 # async def delete_users(user: User,Depend(get_db_connection)):
 #     result = await conn.execute("DELETE FROM users")
 #     if row is None:
 #         raise HTTPException(status_code=404, detail="Could not delete users")
 #     return [dict(row) for row in rows]
-    
-
-
 
 
 # @router.get("/{name}")
@@ -174,7 +179,7 @@ async def post(user: User):
 
 # #getting a single user
 # @router.get("/{user_id}")
-# async def get(user_id : int): 
+# async def get(user_id : int):
 #     for user in users :
 #         if (user_id.id == id):
 #             return {"user" : user}
@@ -183,7 +188,7 @@ async def post(user: User):
 
 
 # @router.get("/{user_name}")
-# async def get(user_name : str): 
+# async def get(user_name : str):
 #     for user in users :
 #         if (user.user_name == user_name):
 #             return {"user" : user}
@@ -199,7 +204,7 @@ async def post(user: User):
 #             users.remove(user)
 
 #             return {"message" : "User has been deleted"}
-    
+
 #     return {"message" : "User not found"}
 
 
@@ -220,11 +225,10 @@ async def post(user: User):
 #     for index, user in enumerate(users):
 #         if user.user_id == id:
 #             users[index] = user_new
-            
+
 #             return {"user": user_new}
 
 #     return {"No user found to update"}
-
 
 
 # @router.put("/{user_name}")
@@ -232,10 +236,7 @@ async def post(user: User):
 #     for index, user in enumerate(users):
 #         if user.user_name == user_name:
 #             users[index] = user_new
-            
+
 #             return {"user": user_new}
 
 #     return {"No user found to update"}
-
-
-

@@ -8,18 +8,17 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-
-class StatusEnum(str, Enum):  
+class StatusEnum(str, Enum):
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
-    
 
-class InvestmentTypeEnum(str, Enum):  
+
+class InvestmentTypeEnum(str, Enum):
     equity = "equity"
     loan = "loan"
     grant = "grant"
-    
+
 
 class IndustryEnum(str, Enum):
     technology = "technology"
@@ -32,7 +31,7 @@ class IndustryEnum(str, Enum):
     retail = "retail"
     other = "other"
     media = "media"
-    
+
 
 class FundingStageEnum(str, Enum):
     pre_seed = "pre_seed"
@@ -47,7 +46,7 @@ class FundingStageEnum(str, Enum):
     grant = "grant"
     ipo = "ipo"
     acquired = "acquired"
-    
+
 
 class CurrencyEnum(str, Enum):
     USD = "USD"
@@ -71,7 +70,7 @@ class GenderEnum(str, Enum):
     male = "male"
     female = "female"
     other = "other"
-    
+
 
 class UserRoleEnum(str, Enum):
     founder = "founder"
@@ -83,125 +82,86 @@ class UserRoleEnum(str, Enum):
 
 
 class Venture(BaseModel):
-    id : int
-    name : str
-    created_at : datetime
-    phone_number : str
-    email : str
+    name: str
+    created_at: datetime
+    phone_number: str
+    email: str
     description: str
     industries: IndustryEnum
-    created_at : datetime
-    funding_stage : FundingStageEnum
-    description : str
-    founders_name : str
-    email : str
-    website_url :str
+    created_at: datetime
+    funding_stage: FundingStageEnum
+    description: str
+    founders_name: str
+    email: str
+    website_url: str
     funding_goal: decimal.Decimal
     total_funding: decimal.Decimal
     valuation: decimal.Decimal
-    is_active : bool
+    is_active: bool
 
 
 class User(BaseModel):
-    name : str
-    role : UserRoleEnum 
-    email : str
-    gender : GenderEnum
-
-    
-        
-class UserProfile(BaseModel):
-    id: int
+    name: str
+    role: UserRoleEnum
     email: str
-    phone_number : str
-    created_at : datetime
-    updated_at : datetime
-    last_login : datetime
-    is_active : bool
+    gender: GenderEnum
+
+
+class UserProfile(BaseModel):
+    email: str
+    phone_number: str
+    created_at: datetime
+    updated_at: datetime
+    last_login: datetime
+    is_active: bool
 
 
 class Investment(BaseModel):
-    id: int
-    user_id : int
-    venture_id : int
+    user_id: int
+    venture_id: int
     title: str
     amount: decimal.Decimal
-    investment_type : InvestmentTypeEnum
-    equity_percent : decimal.Decimal
+    investment_type: InvestmentTypeEnum
+    equity_percent: decimal.Decimal
     currency: CurrencyEnum
-    invested_on : datetime
-    description : str
-    
+    invested_on: datetime
+    description: str
 
-class PitchDecks(BaseModel): # inseroje ne db
-    id: int
+
+class PitchDecks(BaseModel):  # inseroje ne db
     title: str
     file_url: str
     description: str
-    created_at : datetime
-    updated_at : datetime
-    
+    created_at: datetime
+    updated_at: datetime
 
 
-class Team(BaseModel): # inseroje ne db
-    id: int
-    number_of_members : int
+class Team(BaseModel):  # inseroje ne db
+    number_of_members: int
     names: str
     roles: str
     startup_before: bool
 
 
 class Document(BaseModel):
-    id: int
-    title : str
+    title: str
     size: int
-    issue_date : datetime
-    expiry_date : datetime 
+    issue_date: datetime
+    expiry_date: datetime
     content_type: str
-    uploaded_by: str 
-    uploaded_at: datetime 
+    uploaded_by: str
+    uploaded_at: datetime
     description: str
-    status: StatusEnum 
-    
-
+    status: StatusEnum
 
 
 class BankingDetails(BaseModel):
-    id: int
-    user_id : int
+    user_id: int
     account_number: str
     bic: str
     iban: str
-    bank_name : str
-    bank_country : str
+    bank_name: str
+    bank_country: str
     currency: CurrencyEnum
-    balance : decimal.Decimal
-    is_bank_verified : bool
-
-
-
-
-    
-
-
-
-
-     
-    
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
+    balance: decimal.Decimal
+    is_bank_verified: bool

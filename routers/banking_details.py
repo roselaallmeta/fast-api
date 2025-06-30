@@ -1,19 +1,19 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi import FastAPI, File, UploadFile
-from ..model import Investment
+from ..model import BankingDetails
 from datetime import date, timedelta
-from ..database import get_connection
-
+from ..db.seed import get_connection
+from app.routers import banking_details
+from app.db import database
 
 
 router = APIRouter(
-    prefix= "/banking_details",
-    responses={404: {"description": "Not found"}}
+    prefix="/banking_details", responses={404: {"description": "Not found"}}
 )
 
 
-
+@router.post("/")
 async def insert_banking_details(banking_details: BankingDetails):
     query = """
 INSERT INTO main.banking_details (
@@ -28,20 +28,21 @@ INSERT INTO main.banking_details (
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 """
 
-    
-    async with database.pool.acquire() as connection:
-        await connection.execute(query,
-        banking_details.account_number,
-        banking_details.bic,
-        banking_details.iban,
-        banking_details.bank_name,
-        banking_details.bank_country,
-        banking_details.currency,
-        banking_details.balance,
-        banking_details.is_bank_verified
-    )
-    
+    async with db.pool.acquire() as connection:
+        await connection.execute(
+            query,
+            banking_details.account_number,
+            banking_details.bic,
+            banking_details.iban,
+            banking_details.bank_name,
+            banking_details.bank_country,
+            banking_details.currency,
+            banking_details.balance,
+            banking_details.is_bank_verified,
+        )
 
+
+@router.get("/")
 async def get_banking_details(banking_details: BankingDetails) -> BankingDetails | None:
     query = """
         SELECT 
@@ -57,10 +58,10 @@ async def get_banking_details(banking_details: BankingDetails) -> BankingDetails
         FROM main.banking_details
         WHERE account_number = $1
     """
-    
+
     async with database.pool.acquire() as connection:
         row = await connection.fetchrow(query, banking_details.account_number)
-        
+
         if row:
             return BankingDetails(
                 id=row["id"],
@@ -71,15 +72,16 @@ async def get_banking_details(banking_details: BankingDetails) -> BankingDetails
                 bank_country=row["bank_country"],
                 currency=row["currency"],
                 balance=row["balance"],
-                is_bank_verified=row["is_bank_verified"]
+                is_bank_verified=row["is_bank_verified"],
             )
-        
+
         return None
-    
 
 
-
-async def update_banking_details(banking_details: BankingDetails) -> BankingDetails | None:
+@router.put("/")
+async def update_banking_details(
+    banking_details: BankingDetails,
+) -> BankingDetails | None:
     query = """
     UPDATE main.banking_details
     SET
@@ -103,7 +105,7 @@ async def update_banking_details(banking_details: BankingDetails) -> BankingDeta
         balance,
         is_bank_verified
     """
-    
+
     async with database.pool.acquire() as connection:
         row = await connection.fetchrow(
             query,
@@ -115,7 +117,7 @@ async def update_banking_details(banking_details: BankingDetails) -> BankingDeta
             banking_details.currency,
             banking_details.balance,
             banking_details.is_bank_verified,
-            banking_details.user_id
+            banking_details.user_id,
         )
 
         if row:
@@ -128,21 +130,20 @@ async def update_banking_details(banking_details: BankingDetails) -> BankingDeta
                 bank_country=row["bank_country"],
                 currency=row["currency"],
                 balance=row["balance"],
-                is_bank_verified=row["is_bank_verified"]
+                is_bank_verified=row["is_bank_verified"],
             )
 
         return None
 
-        
 
-			
-        
+@router.delete("/")
+async def delete_banking_details_by_id(id: int | None) -> str | None:
+    query = "DELETE FROM main.banking_details WHERE id = $1"
 
+    async with database.pool.acquire() as connection:
+        result = await connection.execute(query, id)
 
+        if result.startswith("DELETE 1"):
+            return "Banking details deleted successfully."
 
-        
-    
-
-    
-
-
+        return None

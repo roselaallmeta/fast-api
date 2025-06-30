@@ -1,6 +1,8 @@
 import asyncio
 import asyncpg
 
+
+
 dropStatements = [
     "DROP TYPE IF EXISTS main.investment_type CASCADE;",
     "DROP TYPE IF EXISTS main.industries CASCADE;",
@@ -186,6 +188,11 @@ table_keys = [
     "banking_details"
 ]
 
+
+
+
+
+
 async def main():
     conn = await asyncpg.connect('postgresql://admin:rosi123@localhost:5433/main')
     
@@ -205,3 +212,4 @@ async def main():
     await conn.close()
 
 asyncio.run(main())
+
