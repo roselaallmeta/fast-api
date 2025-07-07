@@ -13,6 +13,39 @@
 # )
 
 
+
+# @router.post("/")
+# async def investment_validation(investment_validation: Investment):
+#     query = """INSERT INTO main.investments(
+#     user_id,
+#     venture_id,
+#     title,
+#     amount,
+#     investment_type,
+#     equity_percent,
+#     currency,
+#     invested_on,
+#     description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"""
+
+#     async with database.pool.acquire() as connection:
+#         await connection.execute(
+#             query,
+#             investment.user_id,
+#             investment.venture_id,
+#             investment.title,
+#             investment.amount,
+#             investment.investment_type,
+#             investment.equity_percent,
+#             investment.currency,
+#             investment.invested_on,
+#             investment.description,
+#         )
+
+
+
+
+
+
 # calculate investor age
 # def calculate_age(date_of_birth : date) -> int:
 #     today = date.today()

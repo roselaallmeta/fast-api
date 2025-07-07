@@ -1,26 +1,20 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from .routers import (
-    # industries,
-    # investment_validation,
-    # ventures,
-    user,
-    # user_profiles,
-    investments,
-)
-
 from .src.commons.postgres import database
 import uvicorn
-from fastapi import FastAPI
 
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#      await database.connect()
-#    yield
-#     await database.disconnect()
-#     pool = await asyncpg.create_pool(dsn=DATABASE_URL)
-
+from .routers import (
+    user,
+    ventures,
+    pitch_decks,
+    banking_details,
+    document,
+    investments,
+    user_profiles,
+    venture_members
+    
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,17 +26,30 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(user.router)
+app.include_router(ventures.router)
+app.include_router(pitch_decks.router)
+app.include_router(banking_details.router)
+app.include_router(document.router)
 app.include_router(investments.router)
+app.include_router(user_profiles.router)
+app.include_router(venture_members.router)
+
+
+
+
+@app.get("/")
+def root():
+    return {"message": "Server is running"}
 
 # app.include_router(industries.router)
 # app.include_router(investment_validation.router)
-# app.include_router(ventures.router)
 # app.include_router(user_profiles.router)
 # app.include_router(investments.router)
 
 # app.include_router(user_profiles.router)
 
-if __name__ == "__main__ ":
-    uvicorn.run(app, host="8000")
 
-# ctlr + c ngeci
+if __name__ == "__main__ ":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+

@@ -88,19 +88,25 @@ class Venture(BaseModel):
     email: str
     description: str
     industries: IndustryEnum
-    created_at: datetime
     funding_stage: FundingStageEnum
-    description: str
-    founders_name: str
-    email: str
     website_url: str
     funding_goal: decimal.Decimal
     total_funding: decimal.Decimal
     valuation: decimal.Decimal
     is_active: bool
+    
 
+class VentureMembers(BaseModel):
+    venture_id :int
+    member_id : int
+    name : str
+    email : str
+    position : str
+    gender : GenderEnum
+    
 
 class User(BaseModel):
+    user_id: Optional[int] = None
     name: str
     role: UserRoleEnum
     email: str
@@ -108,16 +114,17 @@ class User(BaseModel):
 
 
 class UserProfile(BaseModel):
-    email: str
+    profile_id: int
     phone_number: str
     created_at: datetime
     updated_at: datetime
     last_login: datetime
     is_active: bool
+    description: str
 
 
 class Investment(BaseModel):
-    user_id: int
+    user_id : int
     venture_id: int
     title: str
     amount: decimal.Decimal
@@ -130,6 +137,7 @@ class Investment(BaseModel):
 
 class PitchDecks(BaseModel):  # inseroje ne db
     title: str
+    deck_id : int
     file_url: str
     description: str
     created_at: datetime
@@ -144,14 +152,15 @@ class Team(BaseModel):  # inseroje ne db
 
 
 class Document(BaseModel):
+    user_id: int
     title: str
     size: int
     issue_date: datetime
     expiry_date: datetime
     content_type: str
     uploaded_by: str
-    uploaded_at: datetime
     description: str
+    uploaded_at: datetime
     status: StatusEnum
 
 
@@ -165,3 +174,8 @@ class BankingDetails(BaseModel):
     currency: CurrencyEnum
     balance: decimal.Decimal
     is_bank_verified: bool
+
+
+
+class UpdateVenture(Venture):    
+    pass

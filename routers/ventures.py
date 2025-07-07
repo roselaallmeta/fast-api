@@ -1,13 +1,11 @@
-from fastapi import APIRouter, FastAPI, Query
-
-from app.src.commons.postgres import DATABASE_URL
+from multiprocessing import connection
+import asyncpg
+from fastapi import APIRouter, FastAPI, HTTPException, Query
+from fastapi.encoders import jsonable_encoder
 from ..model import Venture
-from typing import Annotated, List
-from app.routers import ventures
-from app.db import database
+from typing import Annotated, List , Optional
+from ..src.commons.postgres import database
 
-
-# from app.db import get_connection
 
 
 router = APIRouter(prefix="/ventures", responses={404: {"description": "Not found"}})
@@ -24,8 +22,6 @@ async def insert_venture(venture: Venture):
         description,
         industries,
         funding_stage,
-        founders_name,
-        founder_email,
         website_url,
         funding_goal,
         total_funding,
@@ -33,9 +29,11 @@ async def insert_venture(venture: Venture):
         is_active
     ) VALUES (
         $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11, $12, $13, $14
-    )
-"""
+        $8, $9, $10, $11, $12
+    )RETURNING id
+    ;
+    
+""" 
 
     async with database.pool.acquire() as connection:
         await connection.execute(
@@ -47,188 +45,207 @@ async def insert_venture(venture: Venture):
             venture.description,
             venture.industries,
             venture.funding_stage,
-            venture.founders_name,
-            venture.founder_email,
             venture.website_url,
             venture.funding_goal,
             venture.total_funding,
             venture.valuation,
-            venture.is_active,
+            venture.is_active
         )
+        return {"message": "Venture inserted"}
 
 
 @router.get("/")
 async def get_all_ventures(limit: int, offset: int) -> List[Venture]:
-    query = "SELECT * FROM main.ventures"
+    query = "SELECT * FROM main.ventures LIMIT $1 OFFSET $2" 
 
     async with database.pool.acquire() as connection:
-        rows = await connection.fetch(query)
-        ventures = Venture(
-            name=rows["name"],
-            created_at=rows["created_at"],
-            phone_number=rows["phone_number"],
-            email=rows["email"],
-            description=rows["description"],
-            industries=rows["industries"],
-            funding_stage=rows["funding_stage"],
-            website_url=rows["website_url"],
-            funding_goal=rows["funding_goal"],
-            total_funding=rows["total_funding"],
-            valuation=rows["valuation"],
-            is_active=rows["is_active"],
-        )
+        row = await connection.fetch(query, limit, offset)
+        ventures = [
+            Venture(
+                
+                name=record["name"],
+				created_at=record["created_at"],
+                phone_number=record["phone_number"],
+                email=record["email"],
+                description=record["description"],
+                industries=record["industries"],
+                funding_stage=record["funding_stage"],
+                website_url=record["website_url"],
+                funding_goal=record["funding_goal"],
+                total_funding=record["total_funding"],
+                valuation=record["valuation"],
+                is_active=record["is_active"]
+            )
+            for record in row
+        ]
         return ventures
+    
 
-
-@router.get("/{name}")
-async def get_venture_by_name(venture: Venture) -> Venture | None:
-    query = """
-        SELECT 
-            name,
-            created_at,
-            phone_number,
-            email,
-            description,
-            industries,
-            funding_stage,
-            website_url,
-            funding_goal,
-            total_funding,
-            valuation,
-            is_active
-        FROM main.ventures
-        WHERE name = $1
-    """
-
-    async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, venture.name)
-        if row:
-            return Venture(
-                name=row["name"],
-                created_at=row["created_at"],
-                phone_number=row["phone_number"],
-                email=row["email"],
-                description=row["description"],
-                industries=row["industries"],
-                funding_stage=row["funding_stage"],
-                website_url=row["website_url"],
-                funding_goal=row["funding_goal"],
-                total_funding=row["total_funding"],
-                valuation=row["valuation"],
-                is_active=row["is_active"],
-            )
-        return None
-
-
-@router.get("/{industry}")
-async def get_venture_by_industy(venture: Venture) -> Venture | None:
-    query = """
-        SELECT 
-            industries
-        FROM main.ventures
-        WHERE industries = $1
-    """
-
-    async with DATABASE_URL.pool.acquire() as connection:
-        row = await connection.fetchrow(query, venture.industries)
-        if row:
-            return Venture(
-                name=row["name"],
-                created_at=row["created_at"],
-                phone_number=row["phone_number"],
-                email=row["email"],
-                description=row["description"],
-                industries=row["industries"],
-                funding_stage=row["funding_stage"],
-                website_url=row["website_url"],
-                funding_goal=row["funding_goal"],
-                total_funding=row["total_funding"],
-                valuation=row["valuation"],
-                is_active=row["is_active"],
-            )
-        return None
-
-
-@router.get("/{id}")
-async def get_venture_by_id(venture: Venture) -> Venture | None:
-    query = """
-        SELECT 
-            id
-        FROM main.ventures
-        WHERE id = $1
-    """
-
-    async with DATABASE_URL.pool.acquire() as connection:
-        row = await connection.fetchrow(query, venture.id)
-        if row:
-            return Venture(
-                name=row["name"],
-                created_at=row["created_at"],
-                phone_number=row["phone_number"],
-                email=row["email"],
-                description=row["description"],
-                industries=row["industries"],
-                funding_stage=row["funding_stage"],
-                website_url=row["website_url"],
-                funding_goal=row["funding_goal"],
-                total_funding=row["total_funding"],
-                valuation=row["valuation"],
-                is_active=row["is_active"],
-            )
-        return None
 
 
 @router.delete("/")
 async def delete_venture(venture: Venture):
-    query = """
-DELETE FROM main.ventures
-WHERE name = $1
-  AND created_at = $2
-  AND phone_number = $3
-  AND email = $4
-  AND description = $5
-  AND industries = $6
-  AND funding_stage = $7
-  AND website_url = $8
-  AND funding_goal = $9
-  AND total_funding = $10
-  AND valuation = $11
-  AND is_active = $12
-  AND founders_name = $13
-  AND founder_email = $14
-"""
+    query = "DELETE FROM main.ventures WHERE (created_at = $1 AND phone_number = $2 AND email = $3 AND description = $4 AND industries = $5 AND funding_stage = $6 AND website_url = $7 AND funding_goal = $8 AND total_funding= $9 AND valuation= $10 AND is_active = $11)"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(
-            query,
-            venture.name,
-            venture.created_at,
-            venture.phone_number,
-            venture.email,
-            venture.description,
-            venture.industries,
-            venture.funding_stage,
-            venture.founders_name,
-            venture.founder_email,
-            venture.website_url,
-            venture.funding_goal,
-            venture.total_funding,
-            venture.valuation,
-            venture.is_active,
-        )
+        await connection.execute(query, venture.created_at, venture.phone_number, venture.email, venture.description, venture.industries, venture.funding_stage, venture.website_url, venture.funding_goal, venture.total_funding, venture.valuation, venture.is_active )
+    
 
 
-@router.delete("/{id}")
-async def delete_ventures_by_id(id: int | None) -> str | None:
-    query = "DELETE FROM main.ventures WHERE id = $1"
+	
 
-    async with database.pool.acquire() as connection:
-        result = await connection.execute(query, id)
+@router.put("/{id}")
+async def update_venture(venture: Venture):
+    query = "UPDATE main.ventures SET created_at = $2 " \
+			"AND phone_number = $3 AND email = $4 AND description = $5 " \
+			"AND industries = $6 AND funding_stage = $7 AND website_url = $8 " \
+			"AND funding_goal = $9 AND total_funding= $10 AND valuation= $11 " \
+			"AND is_active = $12 WHERE id = $1 RETURNING *"
+    
+    updated = await connection.execute(query, id , venture.name, venture.created_at, venture.phone_number, venture.email, venture.description, venture.industries, venture.funding_stage, venture.website_url,venture.funding_goal, venture.total_funding, venture.valuation, venture.is_active) 
+    
+	
+    if updated is None:
+        raise HTTPException(status_code=404, detail=f"Venture with id {id} does not exist")
 
-        if result.startswith("DELETE 1"):
-            return "Venture deleted successfully."
+    return updated
+    
 
-        return None
+
+async def update_venture(venture : Venture):
+    
+
+   												
+    
+	
+
+    
+
+
+# name=name, phone_number=phone_number, email=email, description=description,
+#                           industries=industries,
+
+
+
+    
+
+
+
+
+# @router.get("/{industry}")
+# async def get_venture_by_industy(venture: Venture) -> Venture | None:
+#     query = """
+#         SELECT 
+#             industries
+#         FROM main.ventures
+#         WHERE industries = $1
+#     """
+
+#     async with DATABASE_URL.pool.acquire() as connection:
+#         row = await connection.fetchrow(query, venture.industries)
+#         if row:
+#             return Venture(
+#                 id=row["id"],
+#                 user_id=row["user_id"],
+#                 name=row["name"],
+# 				created_at=row["created_at"],
+#                 phone_number=row["phone_number"],
+#                 email=row["email"],
+#                 description=row["description"],
+#                 industries=row["industries"],
+#                 funding_stage=row["funding_stage"],
+#                 website_url=row["website_url"],
+#                 funding_goal=row["funding_goal"],
+#                 total_funding=row["total_funding"],
+#                 valuation=row["valuation"],
+#                 is_active=row["is_active"]
+#             )
+#         return None
+
+
+# @router.get("/{id}")
+# async def get_venture_by_id(venture: Venture) -> Venture | None:
+#     query = """
+#         SELECT 
+#             id
+#         FROM main.ventures
+#         WHERE id = $1
+#     """
+
+#     async with DATABASE_URL.pool.acquire() as connection:
+#         row = await connection.fetchrow(query, venture.id)
+#         if row:
+#             return Venture(
+#                 id=row["id"],
+#                 user_id=row["user_id"],
+#                 name=row["name"],
+# 				created_at=row["created_at"],
+#                 phone_number=row["phone_number"],
+#                 email=row["email"],
+#                 description=row["description"],
+#                 industries=row["industries"],
+#                 funding_stage=row["funding_stage"],
+#                 website_url=row["website_url"],
+#                 funding_goal=row["funding_goal"],
+#                 total_funding=row["total_funding"],
+#                 valuation=row["valuation"],
+#                 is_active=row["is_active"]
+#             )
+#         return None
+
+
+# @router.delete("/")
+# async def delete_venture(venture: Venture):
+#     query = """
+# DELETE FROM main.ventures
+# WHERE name = $1
+#   AND id = $2
+#   AND phone_number = $3
+#   AND email = $4
+#   AND description = $5
+#   AND industries = $6
+#   AND funding_stage = $7
+#   AND website_url = $8
+#   AND funding_goal = $9
+#   AND total_funding = $10
+#   AND valuation = $11
+#   AND is_active = $12
+#   AND user_id = $13
+#   AND created_at = $14
+  
+# """
+
+#     async with database.pool.acquire() as connection:
+#         await connection.execute(
+#             query,
+#             venture.name,
+#             venture.created_at,
+#             venture.phone_number,
+#             venture.email,
+#             venture.description,
+#             venture.industries,
+#             venture.funding_stage,
+#             venture.founders_name,
+#             venture.founder_email,
+#             venture.website_url,
+#             venture.funding_goal,
+#             venture.total_funding,
+#             venture.valuation,
+#             venture.is_active,
+#         )
+
+
+# @router.delete("/{id}")
+# async def delete_ventures_by_id(id: int | None) -> str | None:
+#     query = "DELETE FROM main.ventures WHERE id = $1"
+
+#     async with database.pool.acquire() as connection:
+#         result = await connection.execute(query, id)
+
+#         if result.startswith("DELETE 1"):
+#             return "Venture deleted successfully."
+
+#         return None
 
 
 # startups = []

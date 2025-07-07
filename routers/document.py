@@ -1,19 +1,52 @@
 from typing import List
-from fastapi import APIRouter, HTTPException
-from fastapi import FastAPI, File, UploadFile
-from ..model import Document, Investment
-from datetime import date, timedelta
-from ..database import get_connection
-from app.routers import document
-from app.db import database
+from fastapi import APIRouter
+from ..model import Document
+from ..src.commons.postgres import database
+router = APIRouter(prefix="/documents", responses={404: {"description": "Not found"}})
 
 
-router = APIRouter(prefix="/", responses={404: {"description": "Not found"}})
+@router.get("/")
+async def get_all_documents(limit: int, offset: int) -> List[Document]:
+    query = """
+SELECT
+		user_id,
+        title, 
+        size, 
+        issue_date, 
+        expiry_date, 
+        content_type, 
+        uploaded_by,  
+        description, 
+        uploaded_at,
+        status
+
+FROM main.document
+"""
+
+    async with database.pool.acquire() as connection:
+        rows = await connection.fetch(query)
+    documents = [
+        Document(
+            user_id=record["user_id"],
+            title=record["title"],
+            size=record["size"],
+            issue_date=record["issue_date"],
+            expiry_date=record["expiry_date"],
+            content_type=record["content_type"],
+            uploaded_by=record["uploaded_by"],
+            uploaded_at=record["uploaded_at"],
+            description=record["description"],
+            status=record["status"]
+        )
+        for record in rows
+    ]
+    return documents
+
 
 
 @router.post("/")
 async def insert_document(document: Document):
-    query = "INSERT INTO main.document (user_id, title, size, issue_date, expiry_date, content_type, uploaded_by, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+    query = "INSERT INTO main.document (user_id, title, size, issue_date, expiry_date, content_type, uploaded_by,uploaded_at, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
 
     async with database.pool.acquire() as connection:
         await connection.execute(
@@ -25,10 +58,40 @@ async def insert_document(document: Document):
             document.expiry_date,
             document.content_type,
             document.uploaded_by,
+            document.uploaded_at,
             document.description,
-            document.status,
+            document.status
         )
+        
 
+
+@router.delete("/")
+async def delete_user(document: Document):
+    query = "DELETE FROM main.document WHERE (user_id = $1 AND title = $2 AND size = $3 AND issue_date = $4 AND expiry_date = $5 AND content_type = $6 AND uploaded_by = $7 AND description = $8 AND uploaded_at = $9 AND status = $10)"
+
+    async with database.pool.acquire() as connection:
+        await connection.execute(
+    query,
+    document.user_id,
+    document.title,
+    document.size,
+    document.issue_date,
+    document.expiry_date,
+    document.content_type,
+    document.uploaded_by,
+    document.description,
+    document.uploaded_at,
+    document.status
+)
+
+
+
+
+
+
+
+
+#----------------------------------
 
 @router.put("/")
 async def update_document_by_id(id: int, updated: Document) -> Document | None:
@@ -67,64 +130,17 @@ async def update_document_by_id(id: int, updated: Document) -> Document | None:
         return None
 
 
-@router.delete("/")
-async def delete_document_by_id(id: int | None) -> str | None:
-    query = "DELETE FROM main.document WHERE id = $1"
-
-    async with database.pool.acquire() as connection:
-        result = await connection.execute(query, id)
-
-        if result.startswith("DELETE 1"):
-            return "Document deleted successfully."
-
-        return None
 
 
-@router.get("/{id}")
-async def get_document_by_id(id: int | None) -> Document | None:
-    query = "SELECT * FROM main.document WHERE id = $1"
 
-    async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, id)
+# @router.get("/{id}")
+# async def get_document_by_id(id: int | None) -> Document | None:
+#     query = "SELECT * FROM main.document WHERE id = $1"
 
-        if row:
-            return Document(dict(row))
+#     async with database.pool.acquire() as connection:
+#         row = await connection.fetchrow(query, id)
 
-        return None
+#         if row:
+#             return Document(dict(row))
 
-
-@router.get("/")
-async def get_all_documents() -> List[Document]:
-    query = """
-SELECT
-        title, 
-        size, 
-        issue_date, 
-        expiry_date, 
-        content_type, 
-        uploaded_by, 
-        uploaded_at, 
-        description, 
-        status
-
-FROM main.document
-"""
-
-    async with database.pool.acquire() as connection:
-        rows = await connection.fetch(query)
-    documents = [
-        Document(
-            user_id=record["user_id"],
-            title=record["title"],
-            size=record["size"],
-            issue_date=record["issue_date"],
-            expiry_date=record["expiry_date"],
-            content_type=record["content_type"],
-            uploaded_by=record["uploaded_by"],
-            uploaded_at=record["uploaded_at"],
-            description=record["description"],
-            status=record["status"],
-        )
-        for record in rows
-    ]
-    return documents
+#         return None

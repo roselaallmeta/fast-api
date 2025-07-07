@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException
 from fastapi import FastAPI, File, UploadFile
 from ..model import Document, Investment
 from datetime import date, timedelta
-from ..database import get_connection
 from app.routers import teams
 from app.db import database
 

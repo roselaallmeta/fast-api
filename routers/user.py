@@ -2,99 +2,31 @@ from fastapi import APIRouter
 from ..model import User
 from ..src.commons.postgres import database
 from typing import List, Optional
-from app.routers import user
-from app.db import database
+
 
 
 router = APIRouter(prefix="/users", responses={404: {"description": "Not found"}})
 
 
+
 @router.get("/")
 async def get_all_users(limit: int, offset: int) -> List[User]:
-    query = "SELECT name, email, role, gender FROM main.users LIMIT $1 OFFSET $2"
+    query = "SELECT user_id, name, email, role, gender FROM main.users LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
         users = [
             User(
+                user_id=record["user_id"],
                 name=record["name"],
                 email=record["email"],
                 role=record["role"],
-                gender=record["gender"],
+                gender=record["gender"]
             )
             for record in rows
         ]
         return users
 
-
-@router.get("/{role}")
-async def get_users_by_role(limit: int, offset: int) -> List[User]:
-    query = "SELECT name, email, role, gender FROM main.users WHERE role = $1"
-
-    async with database.pool.acquire() as connection:
-        rows = await connection.fetch(query, limit, offset)
-        users = [
-            User(
-                name=record["name"],
-                email=record["email"],
-                role=record["role"],
-                gender=record["gender"],
-            )
-            for record in rows
-        ]
-        return users
-
-
-@router.get("/{id}")
-async def get_user_by_id(limit: int, offset: int) -> User:
-    query = "SELECT name, email, role, gender FROM main.users LIMIT $1 OFFSET $2"
-
-    async with database.pool.acquire() as connection:
-        rows = await connection.fetchrow(query, limit, offset)
-        users = [
-            User(
-                name=record["name"],
-                email=record["email"],
-                role=record["role"],
-                gender=record["gender"],
-            )
-            for record in rows
-        ]
-        return users
-
-
-@router.get("/{name}")
-async def get_user_by_name(user: User) -> User | None:
-    query = """SELECT name, email, role, gender FROM main.users WHERE name = $1"""
-
-    async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, user.name)
-        if row:
-            return User(
-                name=row["name"],
-                email=row["email"],
-                role=row["role"],
-                gender=row["gender"],
-            )
-        return None
-
-
-@router.put("/")
-async def update_user(user: User) -> User | None:
-    query = "UPDATE main.users SET name = $1, email = $2, gender = $3, role = $4 WHERE id = $5"
-
-    async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(
-            query, user.name, user.email, user.gender, user.role
-        )
-        if row:
-            return User(
-                name=row["name"],
-                email=row["email"],
-                role=row["role"],
-                gender=row["gender"],
-            )
-        return None
 
 
 @router.post("/")
@@ -105,15 +37,78 @@ async def insert_user(user: User):
         await connection.execute(query, user.name, user.email, user.gender, user.role)
 
 
+
+
 @router.delete("/")
 async def delete_user(user: User):
-    query = "DELETE FROM main.users WHERE (name = $1 AND email = $2 AND gender = $3 ANDrole = $4)"
+    query = "DELETE FROM main.users WHERE (user_id = $1 AND name = $2 AND role = $3 AND email = $4 AND gender = $5)"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, user.name, user.email, user.gender, user.role)
+        await connection.execute(query, user.user_id, user.name, user.role, user.email, user.gender)
+
+
 
 
 # -----------------------------------------
+
+
+@router.get("/{role}")
+# async def get_users_by_role(limit: int, offset: int) -> List[User]:
+#     query = "SELECT name, email, role, gender FROM main.users WHERE role = $1"
+
+#     async with database.pool.acquire() as connection:
+#         rows = await connection.fetch(query, limit, offset)
+#         users = [
+#             User(
+#                 name=record["name"],
+#                 email=record["email"],
+#                 role=record["role"],
+#                 gender=record["gender"],
+#             )
+#             for record in rows
+#         ]
+#         return users
+
+
+# @router.get("/{id}")
+# async def get_user_by_id(limit: int, offset: int) -> User:
+#     query = "SELECT name, email, role, gender FROM main.users LIMIT $1 OFFSET $2"
+
+#     async with database.pool.acquire() as connection:
+#         rows = await connection.fetchrow(query, limit, offset)
+#         users = [
+#             User(
+#                 name=record["name"],
+#                 email=record["email"],
+#                 role=record["role"],
+#                 gender=record["gender"],
+#             )
+#             for record in rows
+#         ]
+#         return users
+
+
+
+
+
+# @router.put("/")
+# async def update_user(user: User) -> User | None:
+#     query = "UPDATE main.users SET name = $1, email = $2, gender = $3, role = $4 WHERE id = $5"
+
+#     async with database.pool.acquire() as connection:
+#         row = await connection.fetchrow(
+#             query, user.name, user.email, user.gender, user.role
+#         )
+#         if row:
+#             return User(
+#                 name=row["name"],
+#                 email=row["email"],
+#                 role=row["role"],
+#                 gender=row["gender"],
+#             )
+#         return None
+
+
 
 
 @router.get("/")

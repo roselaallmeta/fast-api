@@ -1,8 +1,6 @@
 import asyncio
 import asyncpg
 
-
-
 dropStatements = [
     "DROP TYPE IF EXISTS main.investment_type CASCADE;",
     "DROP TYPE IF EXISTS main.industries CASCADE;",
@@ -10,20 +8,43 @@ dropStatements = [
     "DROP TYPE IF EXISTS main.currency CASCADE;",
     "DROP TYPE IF EXISTS main.gender CASCADE;",
     "DROP TYPE IF EXISTS main.status CASCADE;",
-    "DROP TYPE IF EXISTS main.user_role CASCADE;"
+    "DROP TYPE IF EXISTS main.user_role CASCADE;",
+    "DROP TYPE IF EXISTS main.gender CASCADE;",
+    "DROP TABLE IF EXISTS main.users CASCADE;",  
+    "DROP TYPE IF EXISTS main.user_role CASCADE;", 
+    "DROP TABLE IF EXISTS main.venture_members CASCADE;",
+    "DROP TABLE IF EXISTS main.ventures CASCADE;",
+    "DROP TABLE IF EXISTS main.document CASCADE;",
+    "DROP TABLE IF EXISTS main.banking_details CASCADE;",
+    "DROP TABLE IF EXISTS main.investments CASCADE;"
+    
+
+
+    
+
+
+
+    # "DROP TABLE IF EXISTS main.document CASCADE;",
+    # "DROP TABLE IF EXISTS main.teams CASCADE;",
+    # "DROP TABLE IF EXISTS main.pitch_decks CASCADE;",
+    # "DROP TABLE IF EXISTS main.user_profiles CASCADE;",
+    # "DROP TABLE IF EXISTS main.users CASCADE;" 
 ]
 
+
+
 createStatements = {
+    
     "investment_type": """
-        CREATE TYPE main.investment_type AS ENUM('equity', 'loan', 'grant');
+        CREATE TYPE main.investment_type AS ENUM ('equity', 'loan', 'grant');
     """,
 
     "status": """
-        CREATE TYPE main.status AS ENUM('pending', 'approved', 'rejected');
+        CREATE TYPE main.status AS ENUM ('pending', 'approved', 'rejected');
     """,
 
     "industries": """
-        CREATE TYPE main.industries AS ENUM(
+        CREATE TYPE main.industries AS ENUM (
             'technology',
             'finance',
             'healthcare',
@@ -61,44 +82,60 @@ createStatements = {
 
     "users": """
         CREATE TABLE IF NOT EXISTS main.users (
-            id SERIAL PRIMARY KEY,
+            user_id SERIAL PRIMARY KEY,
             name VARCHAR(255),
             email VARCHAR(255) UNIQUE,
             gender main.gender NOT NULL,
             role main.user_role NOT NULL
         );
     """,
+    
 
     "user_profiles": """
         CREATE TABLE IF NOT EXISTS main.user_profiles (
             id SERIAL PRIMARY KEY,
-            profile_id INT NOT NULL REFERENCES main.users(id),
+            profile_id INT NOT NULL REFERENCES main.users(profile_id),
             phone_number VARCHAR(20) NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW(),
             last_login TIMESTAMP DEFAULT NOW(),
-            is_active BOOLEAN
+            is_active BOOLEAN,
+            description TEXT
         );
     """,
-
-    "ventures": """
+    
+	"ventures": """
         CREATE TABLE IF NOT EXISTS main.ventures (
             id SERIAL PRIMARY KEY,
-            user_id INT NOT NULL REFERENCES main.users(id) ON DELETE CASCADE,
             name VARCHAR(255),
+            created_at TIMESTAMP,
             phone_number VARCHAR(20) NOT NULL,
             email VARCHAR(255),
             description VARCHAR(1000),
             industries main.industries NOT NULL,
-            created_at TIMESTAMP,
             funding_stage main.funding_stage NOT NULL,
             website_url VARCHAR(255),
             funding_goal DECIMAL(18,2),
             total_funding DECIMAL(18,2),
             valuation NUMERIC(18,2),
             is_active BOOLEAN
+            
         );
     """,
+    
+	"venture_members": """
+        CREATE TABLE IF NOT EXISTS main.venture_members (
+            id SERIAL PRIMARY KEY,
+            venture_id INT NOT NULL REFERENCES main.ventures(id) ON DELETE CASCADE,
+            member_id INT NOT NULL REFERENCES main.users(user_id) ON DELETE CASCADE,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255),
+            position VARCHAR(255),
+            gender main.gender NOT NULL
+        );
+    """,
+
+ 
 
     "pitch_decks": """
         CREATE TABLE IF NOT EXISTS main.pitch_decks (
@@ -116,7 +153,7 @@ createStatements = {
         CREATE TABLE IF NOT EXISTS main.investments (
             id SERIAL PRIMARY KEY,
             venture_id INT NOT NULL REFERENCES main.ventures(id) ON DELETE CASCADE,
-            user_id INT NOT NULL REFERENCES main.users(id) ON DELETE CASCADE,
+            user_id INT NOT NULL REFERENCES main.users(user_id) ON DELETE CASCADE,
             title VARCHAR(255),
             amount NUMERIC(18,2),
             investment_type main.investment_type NOT NULL,
@@ -140,7 +177,7 @@ createStatements = {
     "document": """
         CREATE TABLE IF NOT EXISTS main.document (
             id SERIAL PRIMARY KEY,
-            user_id INT NOT NULL REFERENCES main.users(id) ON DELETE CASCADE,
+            user_id INT NOT NULL REFERENCES main.users(user_id) ON DELETE CASCADE,
             title VARCHAR(255),
             size INT,
             issue_date TIMESTAMP DEFAULT NOW(),
@@ -148,6 +185,7 @@ createStatements = {
             content_type TEXT NOT NULL,
             uploaded_by TEXT NOT NULL,
             description TEXT,
+            uploaded_at TIMESTAMP DEFAULT NOW(),
             status main.status NOT NULL
         );
     """,
@@ -155,11 +193,12 @@ createStatements = {
     "banking_details": """
         CREATE TABLE IF NOT EXISTS main.banking_details (
             id SERIAL PRIMARY KEY,
-            user_id INT NOT NULL REFERENCES main.users_id,
+            user_id INT NOT NULL REFERENCES main.users(user_id),
             account_number TEXT UNIQUE NOT NULL,
             IBAN TEXT UNIQUE,
             BIC TEXT UNIQUE,
             bank_name TEXT NOT NULL,
+            bank_country TEXT NOT NULL,
             currency main.currency NOT NULL,
             balance NUMERIC(18,2),
             is_bank_verified BOOLEAN
@@ -181,17 +220,13 @@ table_keys = [
     "users",
     "user_profiles",
     "ventures",
+    "venture_members",
     "pitch_decks",
     "investments",
     "teams",
     "document",
     "banking_details"
 ]
-
-
-
-
-
 
 async def main():
     conn = await asyncpg.connect('postgresql://admin:rosi123@localhost:5433/main')
@@ -204,6 +239,8 @@ async def main():
     for key in type_keys:
         print(f"Creating ENUM: {key}")
         await conn.execute(createStatements[key])
+        
+    print('-------------------------------------')
 
     for key in table_keys:
         print(f"Creating TABLE: {key}")
