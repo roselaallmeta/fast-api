@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from ..model import VentureMembers
+from ..backend.model import VentureMembers
 from ..src.commons.postgres import database
 from typing import List, Optional
 
@@ -27,7 +27,7 @@ async def get_venture_members(limit: int, offset: int) -> List[VentureMembers]:
         return members
     
 
-
+ # nuk ka nevoje t bej get venture member by id sepse eshte tek get user by id apo jo?
 
 @router.post("/")
 async def insert_member(member: VentureMembers):
@@ -36,14 +36,17 @@ async def insert_member(member: VentureMembers):
     async with database.pool.acquire() as connection:
         await connection.execute(query, member.venture_id, member.member_id ,member.name, member.email, member.position, member.gender)
         
+    return {"status": "inserted", "member_id": member.member_id}
 
 
-	
 
-
-@router.delete("/")
-async def delete_user(member: VentureMembers):
-    query = "DELETE FROM main.venture_members WHERE (member_id = $1 AND name = $2 AND email = $3 AND position = $4 AND gender = $5)"
+@router.delete("/{id}")
+async def delete_user(id : int):
+    query = "DELETE FROM main.venture_members WHERE id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, member.member_id, member.name, member.email,member.position, member.gender)
+        await connection.execute(query, id)
+        
+
+
+

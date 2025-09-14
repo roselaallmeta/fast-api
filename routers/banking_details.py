@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
-from ..model import BankingDetails
+from ..backend.model import BankingDetails
 from ..src.commons.postgres import database
 
 
@@ -50,15 +50,11 @@ async def get_banking_details(limit: int, offset: int) -> List[BankingDetails]:
     """
 
     async with database.pool.acquire() as connection:
-        rows = await connection.fetch(query, limit, offset)
+        rows = await connection.fetchrow(query, limit, offset)
         
-        if rows is None:
-            raise HTTPException(status_code=404, detail="Banking details not found")
-
 
         banking_details = [
             BankingDetails(
-                #id=record["id"],
                 user_id=record["user_id"],
 				account_number=record["account_number"],
                 iban=record["iban"],
@@ -72,8 +68,9 @@ async def get_banking_details(limit: int, offset: int) -> List[BankingDetails]:
             for record in rows
         ]
         return banking_details
-
-
+    
+    if rows is None:
+            raise HTTPException(status_code=404, detail="Banking details not found")
 
 
 @router.delete("/")
@@ -168,3 +165,7 @@ async def delete_banking_details(banking_details: BankingDetails):
 #             )
 
 #         return None
+
+
+
+

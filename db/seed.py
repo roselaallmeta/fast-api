@@ -11,23 +11,23 @@ dropStatements = [
     "DROP TYPE IF EXISTS main.user_role CASCADE;",
     "DROP TYPE IF EXISTS main.gender CASCADE;",
     "DROP TABLE IF EXISTS main.users CASCADE;",  
+    "DROP TABLE IF EXISTS main.user_profiles CASCADE;",
     "DROP TYPE IF EXISTS main.user_role CASCADE;", 
     "DROP TABLE IF EXISTS main.venture_members CASCADE;",
     "DROP TABLE IF EXISTS main.ventures CASCADE;",
     "DROP TABLE IF EXISTS main.document CASCADE;",
+    "DROP TABLE IF EXISTS main.venture_members CASCADE;",
     "DROP TABLE IF EXISTS main.banking_details CASCADE;",
-    "DROP TABLE IF EXISTS main.investments CASCADE;"
+    "DROP TABLE IF EXISTS main.investments CASCADE;",  
+    "DROP TABLE IF EXISTS main.pitch_decks CASCADE;"
     
-
-
+    #"SELECT * FROM main.users INNER JOIN main.user_profiles ON main.users.user_id = main.user_profiles.user_id;"
     
-
-
 
     # "DROP TABLE IF EXISTS main.document CASCADE;",
     # "DROP TABLE IF EXISTS main.teams CASCADE;",
-    # "DROP TABLE IF EXISTS main.pitch_decks CASCADE;",
-    # "DROP TABLE IF EXISTS main.user_profiles CASCADE;",
+    
+
     # "DROP TABLE IF EXISTS main.users CASCADE;" 
 ]
 
@@ -89,12 +89,12 @@ createStatements = {
             role main.user_role NOT NULL
         );
     """,
-    
+ 
 
     "user_profiles": """
         CREATE TABLE IF NOT EXISTS main.user_profiles (
             id SERIAL PRIMARY KEY,
-            profile_id INT NOT NULL REFERENCES main.users(profile_id),
+            user_id INT NOT NULL REFERENCES main.users(user_id),
             phone_number VARCHAR(20) NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW(),

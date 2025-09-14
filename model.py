@@ -114,7 +114,7 @@ class User(BaseModel):
 
 
 class UserProfile(BaseModel):
-    profile_id: int
+    user_id: int
     phone_number: str
     created_at: datetime
     updated_at: datetime
@@ -136,8 +136,8 @@ class Investment(BaseModel):
 
 
 class PitchDecks(BaseModel):  # inseroje ne db
-    title: str
     deck_id : int
+    title: str
     file_url: str
     description: str
     created_at: datetime

@@ -1,13 +1,11 @@
-from fastapi import APIRouter
-from ..model import User
+from fastapi import APIRouter, HTTPException
+from ..backend.model import User
 from ..src.commons.postgres import database
 from typing import List, Optional
 
 
 
 router = APIRouter(prefix="/users", responses={404: {"description": "Not found"}})
-
-
 
 @router.get("/")
 async def get_all_users(limit: int, offset: int) -> List[User]:
@@ -26,8 +24,31 @@ async def get_all_users(limit: int, offset: int) -> List[User]:
             for record in rows
         ]
         return users
+    
 
 
+
+
+@router.get("/{user_id}", response_model=User)
+async def get_user_id(user_id: int):
+    query = "SELECT * FROM main.users WHERE user_id = $1"
+    
+    async with database.pool.acquire() as connection:
+        row = await connection.fetchrow(query, user_id)
+        
+    if row is None:
+            raise HTTPException(status_code=404, detail=f"Could not find user with user_id={user_id}")
+    
+
+    return User(
+        user_id=row["user_id"],
+        name=row["name"],
+        role=row["role"],
+        email=row["email"],
+        gender=row["gender"]    
+	)
+             
+        
 
 @router.post("/")
 async def insert_user(user: User):
@@ -39,13 +60,42 @@ async def insert_user(user: User):
 
 
 
-@router.delete("/")
-async def delete_user(user: User):
-    query = "DELETE FROM main.users WHERE (user_id = $1 AND name = $2 AND role = $3 AND email = $4 AND gender = $5)"
+@router.put("/{user_id}" , response_model=User)
+async def update_user_id(user_id : int, user:User):
+    query = "UPDATE main.users SET name = $2, role = $3, " \
+			"email = $4 , gender = $5 WHERE user_id = $1 RETURNING *"
+    
+    async with database.pool.acquire() as connection:
+        row = await connection.fetchrow(
+            query,
+            user_id,
+            user.name,
+            user.role,
+            user.email,
+            user.gender
+        ) 
+
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"User with id {user_id} does not exist")
+    
+    return User(
+    name=row["name"],
+    role=row["role"],
+    email=row["email"],
+    gender=row["gender"]
+	)
+    
+
+
+
+@router.delete("/{user_id}")
+async def delete_user(user_id : int):
+    query = "DELETE FROM main.users WHERE user_id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, user.user_id, user.name, user.role, user.email, user.gender)
-
+        await connection.execute(query, user_id)
+        
+    return "User deleted sucessfully";
 
 
 

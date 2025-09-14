@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi import FastAPI, File, UploadFile
-from ..model import Investment
+from ..backend.model import Investment
 from datetime import date, timedelta
 from ..src.commons.postgres import database
 
@@ -22,10 +22,10 @@ async def insert_investment(investment: Investment):
     equity_percent,
     currency,
     invested_on,
-    description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"""
+    description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *"""
 
     async with database.pool.acquire() as connection:
-        await connection.execute(
+        row= await connection.fetchrow(
             query,
             investment.user_id,
             investment.venture_id,
@@ -35,10 +35,15 @@ async def insert_investment(investment: Investment):
             investment.equity_percent,
             investment.currency,
             investment.invested_on,
-            investment.description,
+            investment.description
         )
+        
 
-
+    return Investment(**row)
+        
+        
+        
+       
 @router.get("/")
 async def get_all_investments() -> List[Investment]:
     query = """
@@ -76,6 +81,86 @@ async def get_all_investments() -> List[Investment]:
            ]
         return investments
     
+	
+
+@router.get("/{id}", response_model=Investment)
+async def get_investment_id(id: int):
+    query = "SELECT * FROM main.investments WHERE id = $1"
+
+    async with database.pool.acquire() as connection:
+        row = await connection.fetchrow(query, id)
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Could not find investment with id={id}"
+        )
+
+    return Investment(
+        user_id=row["user_id"],
+        venture_id=row["venture_id"],
+        title=row["title"],
+        amount=row["amount"],
+        investment_type=row["investment_type"],
+        equity_percent=row["equity_percent"],
+        currency=row["currency"],
+        invested_on=row["invested_on"],
+        description=row["description"]
+    )
+
+        
+
+
+
+
+@router.put("/{id}", response_model=Investment)
+async def update_investment(id:int, investment:Investment):
+    query = """UPDATE main.investments SET 
+    	user_id = $2,
+        venture_id = $3,
+        title = $4,
+        amount = $5,
+        investment_type = $6,
+        equity_percent = $7,
+        currency = $8,
+        invested_on = $9,
+        description = $10 WHERE id=$1 RETURNING *"""
+    
+
+
+    async with database.pool.acquire() as connection:
+        row = await connection.fetchrow(query, id , 
+                                        investment.user_id,
+                                        investment.venture_id, 
+                                        investment.title, investment.amount, 
+                                        investment.investment_type, investment.equity_percent, 
+                                        investment.currency, investment.invested_on, 
+                                        investment.description)  
+
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Investment with id {id} does not exist")
+    
+    return Investment(
+    user_id=row["user_id"],
+    venture_id=row["venture_id"],
+    title=row["title"],
+    amount=row["amount"],
+    investment_type=row["investment_type"],
+    equity_percent=row["equity_percent"],
+    currency=row["currency"],
+    invested_on=row["invested_on"],
+    description=row["description"]
+)
+    
+        
+        
+    
+    
+    
+    
+    
+    
+    
 
 
 @router.delete("/")
@@ -106,6 +191,9 @@ async def delete_investment(investment: Investment):
             investment.invested_on,
             investment.description
         )
+        
+
+    return {f"Investment deleted sucessfully."}
 
 
 

@@ -1,12 +1,13 @@
 from typing import List
 from fastapi import APIRouter
-from ..model import Document
+from ..backend.model import Document
 from ..src.commons.postgres import database
 router = APIRouter(prefix="/documents", responses={404: {"description": "Not found"}})
 
 
-@router.get("/")
-async def get_all_documents(limit: int, offset: int) -> List[Document]:
+
+@router.get("/", response_model=List[Document])
+async def get_all_documents(limit: int = 10, offset: int = 0):
     query = """
 SELECT
 		user_id,

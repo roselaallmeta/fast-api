@@ -1,11 +1,9 @@
-from multiprocessing import connection
 import asyncpg
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
-from ..model import Venture
+from ..backend.model import Venture
 from typing import Annotated, List , Optional
 from ..src.commons.postgres import database
-
 
 
 router = APIRouter(prefix="/ventures", responses={404: {"description": "Not found"}})
@@ -13,8 +11,10 @@ router = APIRouter(prefix="/ventures", responses={404: {"description": "Not foun
 
 @router.post("/")
 async def insert_venture(venture: Venture):
+    
     query = """
     INSERT INTO main.ventures (
+	
         name,
         created_at,
         phone_number,
@@ -29,8 +29,8 @@ async def insert_venture(venture: Venture):
         is_active
     ) VALUES (
         $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11, $12
-    )RETURNING id
+        $8, $9, $10, $11, $12 
+    )RETURNING *
     ;
     
 """ 
@@ -51,11 +51,14 @@ async def insert_venture(venture: Venture):
             venture.valuation,
             venture.is_active
         )
-        return {"message": "Venture inserted"}
+        
+        return [dict(venture)]
+    
+
 
 
 @router.get("/")
-async def get_all_ventures(limit: int, offset: int) -> List[Venture]:
+async def get_all_ventures (limit: int, offset: int):
     query = "SELECT * FROM main.ventures LIMIT $1 OFFSET $2" 
 
     async with database.pool.acquire() as connection:
@@ -63,6 +66,7 @@ async def get_all_ventures(limit: int, offset: int) -> List[Venture]:
         ventures = [
             Venture(
                 
+                id=record["id"],
                 name=record["name"],
 				created_at=record["created_at"],
                 phone_number=record["phone_number"],
@@ -75,49 +79,176 @@ async def get_all_ventures(limit: int, offset: int) -> List[Venture]:
                 total_funding=record["total_funding"],
                 valuation=record["valuation"],
                 is_active=record["is_active"]
+                
             )
             for record in row
         ]
+        
         return ventures
     
 
 
-
-@router.delete("/")
-async def delete_venture(venture: Venture):
-    query = "DELETE FROM main.ventures WHERE (created_at = $1 AND phone_number = $2 AND email = $3 AND description = $4 AND industries = $5 AND funding_stage = $6 AND website_url = $7 AND funding_goal = $8 AND total_funding= $9 AND valuation= $10 AND is_active = $11)"
+@router.get("/{id}", response_model=Venture)
+async def get_all_ventures(id: int):
+    query = "SELECT * FROM main.ventures WHERE id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, venture.created_at, venture.phone_number, venture.email, venture.description, venture.industries, venture.funding_stage, venture.website_url, venture.funding_goal, venture.total_funding, venture.valuation, venture.is_active )
+        row = await connection.fetchrow(query, id)
+
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Could not find a venture with id={id}")
+
+    return Venture(
+        id=row["id"],
+        name=row["name"],
+        created_at=row["created_at"],
+        phone_number=row["phone_number"],
+        email=row["email"],
+        description=row["description"],
+        industries=row["industries"],
+        funding_stage=row["funding_stage"],
+        website_url=row["website_url"],
+        funding_goal=row["funding_goal"],
+        total_funding=row["total_funding"],
+        valuation=row["valuation"],
+        is_active=row["is_active"]
+    )
+
+
+
+@router.delete("/{id}")
+async def delete_venture(id : int):
+    query = "DELETE FROM main.ventures WHERE id = $1"
+    async with database.pool.acquire() as connection:
+        await connection.execute(query, id)
     
 
 
+
+@router.put("/{id}" , response_model=Venture)
+async def update_venture(id : int, venture: Venture):
+    
+    query = "UPDATE main.ventures SET name = $2, created_at = $3, " \
+			"phone_number = $4 , email = $5, description = $6 ," \
+			"industries = $7 ,funding_stage = $8 , website_url = $9, " \
+			"funding_goal = $10 , total_funding= $11 , valuation= $12 ," \
+			"is_active = $13 WHERE id = $1 RETURNING *"
+    
+
+    async with database.pool.acquire() as connection:
+        row = await connection.fetchrow(query, id , venture.name, venture.created_at, venture.phone_number, venture.email, venture.description, venture.industries, venture.funding_stage, venture.website_url, venture.funding_goal, venture.total_funding, venture.valuation, venture.is_active)  
+
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Venture with id {id} does not exist")
+    
+    return Venture(
+    id=row["id"],
+    name=row["name"],
+    created_at=row["created_at"],
+    phone_number=row["phone_number"],
+    email=row["email"],
+    description=row["description"],
+    industries=row["industries"],
+    funding_stage=row["funding_stage"],
+    website_url=row["website_url"],
+    funding_goal=row["funding_goal"],
+    total_funding=row["total_funding"],
+    valuation=row["valuation"],
+    is_active=row["is_active"]
+)
 	
+    
+    async with database.pool.acquire() as connection:
+        updated = await connection.fetchrow(query, id , venture.name, venture.created_at, venture.phone_number, venture.email, venture.description, venture.industries, venture.funding_stage, venture.website_url, venture.funding_goal, venture.total_funding, venture.valuation, venture.is_active)  
 
-@router.put("/{id}")
-async def update_venture(venture: Venture):
-    query = "UPDATE main.ventures SET created_at = $2 " \
-			"AND phone_number = $3 AND email = $4 AND description = $5 " \
-			"AND industries = $6 AND funding_stage = $7 AND website_url = $8 " \
-			"AND funding_goal = $9 AND total_funding= $10 AND valuation= $11 " \
-			"AND is_active = $12 WHERE id = $1 RETURNING *"
-    
-    updated = await connection.execute(query, id , venture.name, venture.created_at, venture.phone_number, venture.email, venture.description, venture.industries, venture.funding_stage, venture.website_url,venture.funding_goal, venture.total_funding, venture.valuation, venture.is_active) 
-    
-	
     if updated is None:
         raise HTTPException(status_code=404, detail=f"Venture with id {id} does not exist")
-
+    
     return updated
+
+
+
+
+         
+
+    # if updated:
+    #         updated.update({"updated" : updated})
+        
+
+        #await connection.execute(query, venture.created_at, venture.phone_number, venture.email, venture.description, venture.industries, venture.funding_stage, venture.website_url, venture.funding_goal, venture.total_funding, venture.valuation, venture.is_active )
     
 
 
-async def update_venture(venture : Venture):
+        
+#         updated = {
+#                  "id": id,
+#                  "name": name,
+#     "created_at": created_at,
+#     "phone_number": phone_number,
+#     "email": email,
+#     "description": description,
+#     "industries": industries,
+#     "funding_stage": funding_stage,
+#     "website_url": website_url,
+#     "funding_goal": funding_goal,
+#     "total_funding": total_funding,
+#     "valuation": valuation,
+#     "is_active": is_active
+# }
+
+
+
+    # if updated is None:
+    #     raise HTTPException(status_code=404, detail=f"Venture with id {id} does not exist")
+    
+    #return result
+
+
+
     
 
-   												
-    
+
+# 	@app.put("/items/{item_id}")
+# async def update_item(item_id: int, item: Item, q: str | None = None):
+#     result = {"item_id": item_id, **item.dict()}
+#     if q:
+#         result.update({"q": q})
+#     return result
 	
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     
 
