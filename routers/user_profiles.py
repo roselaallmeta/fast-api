@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
-from ..backend.model import UserProfile
+from ..model import UserProfile
 from ..src.commons.postgres import database
 
 

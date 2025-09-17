@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
-from ..backend.model import BankingDetails
+from ..model import BankingDetails
 from ..src.commons.postgres import database
 
 

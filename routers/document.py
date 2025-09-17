@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter
-from ..backend.model import Document
+from ..model import Document
 from ..src.commons.postgres import database
 router = APIRouter(prefix="/documents", responses={404: {"description": "Not found"}})
 

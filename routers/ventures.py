@@ -1,7 +1,7 @@
 import asyncpg
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
-from ..backend.model import Venture
+from ..model import Venture
 from typing import Annotated, List , Optional
 from ..src.commons.postgres import database
 

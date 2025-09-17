@@ -106,10 +106,10 @@ class VentureMembers(BaseModel):
     
 
 class User(BaseModel):
-    user_id: Optional[int] = None
     name: str
     role: UserRoleEnum
     email: str
+    password: str
     gender: GenderEnum
 
 

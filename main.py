@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from .src.commons.postgres import database
 import uvicorn
-
+from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import (
     user,
@@ -13,7 +13,6 @@ from .routers import (
     investments,
     user_profiles,
     venture_members
-    
 )
 
 @asynccontextmanager
@@ -22,8 +21,22 @@ async def lifespan(app: FastAPI):
     yield
     await database.disconnect()
 
+origins = [
+    "http://localhost",
+    "http://localhost:*",
+    "http://localhost:3000"
+    "http://127.0.0.1:*"
+]
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(user.router)
 app.include_router(ventures.router)
@@ -51,6 +64,5 @@ def root():
 
 
 if __name__ == "__main__ ":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
+    uvicorn.run(app, host="0.0.0.0", port=8001)
 

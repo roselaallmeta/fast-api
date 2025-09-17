@@ -1,6 +1,7 @@
 import asyncio
 import asyncpg
 
+
 dropStatements = [
     "DROP TYPE IF EXISTS main.investment_type CASCADE;",
     "DROP TYPE IF EXISTS main.industries CASCADE;",
@@ -84,6 +85,7 @@ createStatements = {
         CREATE TABLE IF NOT EXISTS main.users (
             user_id SERIAL PRIMARY KEY,
             name VARCHAR(255),
+            password VARCHAR(255) NOT NULL,
             email VARCHAR(255) UNIQUE,
             gender main.gender NOT NULL,
             role main.user_role NOT NULL

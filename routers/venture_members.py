@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from ..backend.model import VentureMembers
+from ..model import VentureMembers
 from ..src.commons.postgres import database
 from typing import List, Optional
 

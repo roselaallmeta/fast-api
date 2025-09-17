@@ -1,14 +1,12 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi import FastAPI, File, UploadFile
-from ..backend.model import Investment
+from ..model import Investment
 from datetime import date, timedelta
 from ..src.commons.postgres import database
 
 
-
 router = APIRouter(prefix="/investments", responses={404: {"description": "Not found"}})
-
 
 
 @router.post("/")

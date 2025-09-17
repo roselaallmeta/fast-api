@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from ..backend.model import PitchDecks
+from ..model import PitchDecks
 from typing import List
 from ..src.commons.postgres import database
 

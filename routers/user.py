@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from ..backend.model import User
+from ..model import User
 from ..src.commons.postgres import database
 from typing import List, Optional
 
@@ -7,102 +7,104 @@ from typing import List, Optional
 
 router = APIRouter(prefix="/users", responses={404: {"description": "Not found"}})
 
-@router.get("/")
-async def get_all_users(limit: int, offset: int) -> List[User]:
-    query = "SELECT user_id, name, email, role, gender FROM main.users LIMIT $1 OFFSET $2"
-
-    async with database.pool.acquire() as connection:
-        rows = await connection.fetch(query, limit, offset)
-        users = [
-            User(
-                user_id=record["user_id"],
-                name=record["name"],
-                email=record["email"],
-                role=record["role"],
-                gender=record["gender"]
-            )
-            for record in rows
-        ]
-        return users
-    
-
-
-
-
-@router.get("/{user_id}", response_model=User)
-async def get_user_id(user_id: int):
-    query = "SELECT * FROM main.users WHERE user_id = $1"
-    
-    async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, user_id)
-        
-    if row is None:
-            raise HTTPException(status_code=404, detail=f"Could not find user with user_id={user_id}")
-    
-
-    return User(
-        user_id=row["user_id"],
-        name=row["name"],
-        role=row["role"],
-        email=row["email"],
-        gender=row["gender"]    
-	)
-             
-        
 
 @router.post("/")
 async def insert_user(user: User):
-    query = "INSERT INTO main.users (name, email, gender, role) VALUES ($1, $2, $3, $4)"
+    query = "INSERT INTO main.users (name, email, role, gender, password) VALUES ($1, $2, $3, $4, $5)"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, user.name, user.email, user.gender, user.role)
+        await connection.execute(query, user.name, user.email, user.role, user.gender, user.password)
+
+
+# @router.post("/users/")
+# async def create_user(user: User):
+#     return user
 
 
 
+# @router.get("/")
+# async def get_all_users(limit: int, offset: int) -> List[User]:
+#     query = "SELECT user_id, name, email, role, gender,password FROM main.users LIMIT $1 OFFSET $2"
 
-@router.put("/{user_id}" , response_model=User)
-async def update_user_id(user_id : int, user:User):
-    query = "UPDATE main.users SET name = $2, role = $3, " \
-			"email = $4 , gender = $5 WHERE user_id = $1 RETURNING *"
+#     async with database.pool.acquire() as connection:
+#         rows = await connection.fetch(query, limit, offset)
+#         users = [
+#             User(
+#                 user_id=record["user_id"],
+#                 name=record["name"],
+#                 email=record["email"],
+#                 role=record["role"],
+#                 gender=record["gender"],
+#                 password=record["password"]
+#             )
+#             for record in rows
+#         ]
+#         return users
     
-    async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(
-            query,
-            user_id,
-            user.name,
-            user.role,
-            user.email,
-            user.gender
-        ) 
-
-    if row is None:
-        raise HTTPException(status_code=404, detail=f"User with id {user_id} does not exist")
+# @router.get("/{user_id}", response_model=User)
+# async def get_user_id(user_id: int):
+#     query = "SELECT * FROM main.users WHERE user_id = $1"
     
-    return User(
-    name=row["name"],
-    role=row["role"],
-    email=row["email"],
-    gender=row["gender"]
-	)
-    
-
-
-
-@router.delete("/{user_id}")
-async def delete_user(user_id : int):
-    query = "DELETE FROM main.users WHERE user_id = $1"
-
-    async with database.pool.acquire() as connection:
-        await connection.execute(query, user_id)
+#     async with database.pool.acquire() as connection:
+#         row = await connection.fetchrow(query, user_id)
         
-    return "User deleted sucessfully";
+#     if row is None:
+#             raise HTTPException(status_code=404, detail=f"Could not find user with user_id={user_id}")
+    
+
+#     return User(
+#         user_id=row["user_id"],
+#         name=row["name"],
+#         role=row["role"],
+#         email=row["email"],
+#         gender=row["gender"],
+#         password=row["password"]
+           
+# 	)
 
 
+
+
+# @router.put("/{user_id}" , response_model=User)
+# async def update_user_id(user_id:int,  user:User):
+#     query = "UPDATE main.users SET name = $2, role = $3, " \
+# 			"email = $4 , gender = $5, password=$6 WHERE user_id = $1 RETURNING *"
+    
+#     async with database.pool.acquire() as connection:
+#         row = await connection.fetchrow(
+#             query,
+#             user_id,
+#             user.name,
+#             user.role,
+#             user.email,
+#             user.gender,
+#             user.password
+#         ) 
+
+#     if row is None:
+#         raise HTTPException(status_code=404, detail=f"User with id {user_id} does not exist")
+    
+#     return User(
+#     name=row["name"],
+#     role=row["role"],
+#     email=row["email"],
+#     gender=row["gender"],
+#     password=row["password"]
+# 	)
+
+
+# @router.delete("/{user_id}")
+# async def delete_user(user_id : int):
+#     query = "DELETE FROM main.users WHERE user_id = $1"
+
+#     async with database.pool.acquire() as connection:
+#         await connection.execute(query, user_id)
+        
+#     return "User deleted sucessfully";
 
 # -----------------------------------------
 
-
-@router.get("/{role}")
+# @router.get("/{role}")
 # async def get_users_by_role(limit: int, offset: int) -> List[User]:
 #     query = "SELECT name, email, role, gender FROM main.users WHERE role = $1"
 
@@ -169,6 +171,9 @@ async def get(limit: Optional[int] = 10, offset: Optional[int] = 0):
 @router.post("/")
 async def post(user: User):
     return await insert_user(user)
+
+
+
 
     # query = "SELECT name, email FROM users WHERE email = $1"
     # async with database.pool.acquire() as connection:
