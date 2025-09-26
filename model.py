@@ -4,7 +4,7 @@ import decimal
 from enum import Enum
 from typing import Optional
 from fastapi import FastAPI, File
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 
 
@@ -79,6 +79,36 @@ class UserRoleEnum(str, Enum):
     institution = "institution"
     admin = "admin"
     business = "business"
+    
+
+
+
+class User(BaseModel):
+    name: str
+    role: UserRoleEnum
+    email: str
+    password: str
+    gender: GenderEnum
+
+    # @field_validator("name", "email", "password", "role" , "gender")
+    # def field_must_not_be_empty(cls, v):
+    #     if v == 0:
+    #         raise ValueError("Fields must not be empty")
+    #     return v
+    
+    
+    # @field_validator("password")
+    # def password_validation(p: str):
+    #     if (p.__len__ < 5):
+    #         raise ValueError("Password cannot have less than 5 characters.")
+    #     return {"Try with a different email"}
+
+
+    # @field_validator("email")
+    # def email_validation(e, item):
+    #     if item in e not in ["@", "."]:
+    #         raise ValueError("Email must contain {item}")
+    #     return {"Try with a different email"}
 
 
 class Venture(BaseModel):
@@ -104,14 +134,6 @@ class VentureMembers(BaseModel):
     position : str
     gender : GenderEnum
     
-
-class User(BaseModel):
-    name: str
-    role: UserRoleEnum
-    email: str
-    password: str
-    gender: GenderEnum
-
 
 class UserProfile(BaseModel):
     user_id: int

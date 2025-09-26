@@ -1,5 +1,5 @@
 import asyncio
-import asyncpg
+
 
 
 dropStatements = [
@@ -230,6 +230,8 @@ table_keys = [
     "banking_details"
 ]
 
+
+import asyncpg
 async def main():
     conn = await asyncpg.connect('postgresql://admin:rosi123@localhost:5433/main')
     
