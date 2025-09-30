@@ -7,14 +7,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import (
     user,
     ventures,
-    pitch_decks,
-    banking_details,
+    teams,
     document,
     investments,
-    user_profiles,
+    pitch_decks,
+    banking_details,
     venture_members
-)
+        
 
+
+    # banking_details,
+    # user_profiles,
+    
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,12 +44,13 @@ app.add_middleware(
 
 app.include_router(user.router)
 app.include_router(ventures.router)
-app.include_router(pitch_decks.router)
-app.include_router(banking_details.router)
+app.include_router(teams.router)
 app.include_router(document.router)
 app.include_router(investments.router)
-app.include_router(user_profiles.router)
+app.include_router(pitch_decks.router)
+app.include_router(banking_details.router)
 app.include_router(venture_members.router)
+# app.include_router(user_profiles.router)
 
 
 @app.get("/")
@@ -52,9 +58,6 @@ def root():
     return {"message": "Server is running"}
 
 
-@app.get("/items")
-async def get(take: int, skip: int):
-    return {"items": [], "take": take, "skip": skip}
 
 # @app.post("/")
 # async def create_user(user):
@@ -82,5 +85,3 @@ async def get(take: int, skip: int):
 # app.include_router(user_profiles.router)
 
 
-# if __name__ == "__main__ ":
-#     uvicorn.run(app, host="0.0.0.0", port=8002)

@@ -81,8 +81,6 @@ class UserRoleEnum(str, Enum):
     business = "business"
     
 
-
-
 class User(BaseModel):
     name: str
     role: UserRoleEnum
@@ -113,7 +111,7 @@ class User(BaseModel):
 
 class Venture(BaseModel):
     name: str
-    created_at: datetime
+    created_at: Optional[datetime] = None
     phone_number: str
     email: str
     description: str
@@ -153,7 +151,7 @@ class Investment(BaseModel):
     investment_type: InvestmentTypeEnum
     equity_percent: decimal.Decimal
     currency: CurrencyEnum
-    invested_on: datetime
+    invested_on: Optional[datetime] = None
     description: str
 
 
