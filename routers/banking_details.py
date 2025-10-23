@@ -5,7 +5,7 @@ from ..src.commons.postgres import database
 
 
 router = APIRouter(
-    prefix="/banking-details", responses={404: {"description": "Not found"}}
+    prefix="/bank-details", responses={404: {"description": "Not found"}}
 )
 
 
@@ -13,10 +13,10 @@ router = APIRouter(
 
 
 async def insert_banking_details(banking_details: BankingDetails):
-    query = "INSERT INTO main.banking_details (user_id, account_number, iban, bic, bank_name, bank_country, currency, balance, is_bank_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+    query = "INSERT INTO main.banking_details (user_id, account_number, iban, bic, bank_name, bank_country, currency, balance, is_bank_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(
+        await connection.fetchrow(
             query,
             banking_details.user_id,
             banking_details.account_number,
@@ -40,12 +40,17 @@ async def post(banking_details: BankingDetails):
 
 async def get_banking_details(limit: int, offset: int) -> List:
     query = "SELECT * FROM main.banking_details LIMIT $1 OFFSET $2 "
+    banking_details = []
 
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
 
-        banking_details = [
-            BankingDetails(
+        if rows is None:
+            raise HTTPException(
+                status_code=404, detail="Banking details not found")
+
+        for record in rows:
+            entry = BankingDetails(
                 user_id=record["user_id"],
                 account_number=record["account_number"],
                 iban=record["iban"],
@@ -56,13 +61,13 @@ async def get_banking_details(limit: int, offset: int) -> List:
                 balance=record["balance"],
                 is_bank_verified=record["is_bank_verified"]
             )
-            for record in rows
-        ]
-        return banking_details
 
-    if rows is None:
-        raise HTTPException(
-            status_code=404, detail="Banking details not found")
+            banking_details.append({
+                **entry.model_dump(),
+                "id": record["id"]
+            })
+
+        return banking_details
 
 
 @router.get("/")
@@ -76,12 +81,11 @@ async def get_details_id(id: int, banking_details: BankingDetails):
     query = " SELECT * FROM main.banking_details WHERE id=$1"
 
     async with database.pool.acquire() as connection:
-         row= await connection.fetchrow(query, id)
-    
+        row = await connection.fetchrow(query, id)
+
     if row is None:
         raise HTTPException(
             status_code=404, detail=f"Could not find banking details with id={id}")
-
 
     banking_details = BankingDetails(
         user_id=row["user_id"],
@@ -106,8 +110,7 @@ async def get_detail(id: int, banking_details: BankingDetails):
     return await get_details_id(id, banking_details)
 
 
-
-#----------------------------------------------------
+# ----------------------------------------------------
 
 
 async def put_banking_details(id: int, banking_details: BankingDetails):

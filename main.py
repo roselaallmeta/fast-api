@@ -4,6 +4,7 @@ from .src.commons.postgres import database
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 
+
 from .routers import (
     user,
     ventures,
@@ -12,13 +13,10 @@ from .routers import (
     investments,
     pitch_decks,
     banking_details,
-    venture_members
-        
-
-
-    # banking_details,
-    # user_profiles,
-    
+    venture_members,
+    banking_details,
+    user_profiles,
+    team_members
 )
 
 @asynccontextmanager
@@ -50,7 +48,8 @@ app.include_router(investments.router)
 app.include_router(pitch_decks.router)
 app.include_router(banking_details.router)
 app.include_router(venture_members.router)
-# app.include_router(user_profiles.router)
+app.include_router(user_profiles.router)
+app.include_router(team_members.router)
 
 
 @app.get("/")
@@ -59,29 +58,8 @@ def root():
 
 
 
-# @app.post("/")
-# async def create_user(user):
-#     user_dict = user.dict()
-#     if [user.name, user.email, user.password, user.role, user.gender] is not None:
-#         return {"message": "User created successfully"}
-
-    # success == true;
-    # errors = [];
 
 
-# @app.post("/users")
-# async def fetch_user(res):
-#    request_body = {user.name, user.email, user.password, user.role, user.gender};
 
-
-#    res = await request_body.post("http://localhost:8000")
-#    return await res.json();
-
-
-# app.include_router(industries.router)
-# app.include_router(investment_validation.router)
-# app.include_router(user_profiles.router)
-# app.include_router(investments.router)
-# app.include_router(user_profiles.router)
 
 

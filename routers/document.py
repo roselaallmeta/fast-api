@@ -10,7 +10,7 @@ router = APIRouter(prefix="/documents",
 
 
 async def get_document_id(id: int):
-    query = "SELECT document.user_id , document.title, document.size, document.issue_date, document.expiry_date, document.content_type,document.uploaded_by, document.description, document.uploaded_at, document.status FROM main.document WHERE id = $1"
+    query = "SELECT document.user_id , document.title, document.add_document, document.issue_date, document.expiry_date, document.content_type,document.uploaded_by, document.description, document.uploaded_at, document.status FROM main.document WHERE id = $1"
 
     async with database.pool.acquire() as connection:
         row = await connection.fetchrow(query, id)
@@ -19,12 +19,10 @@ async def get_document_id(id: int):
         raise HTTPException(
             status_code=404, detail=f"Could not find document with id={id: int}")
 
-
     document = Document(
-        document_id=row["id"],
         user_id=row["user_id"],
         title=row["title"],
-        size=row["size"],
+        add_document=row["add_document"],
         issue_date=row["issue_date"],
         expiry_date=row["expiry_date"],
         content_type=row["content_type"],
@@ -39,9 +37,10 @@ async def get_document_id(id: int):
         **document.model_dump()
     }
 
+
 @router.get("/{id}", response_model=Document)
-async def get_doc(document_id: int):
-    return await get_document_id(document_id)
+async def get_doc(id: int):
+    return await get_document_id(id)
 
 # --------------------------------------------------------------
 
@@ -57,7 +56,7 @@ async def get_all_docs(limit: int, offset: int):
             document = Document(
                 user_id=record["user_id"],
                 title=record["title"],
-                size=record["size"],
+                add_document=record["add_document"],
                 issue_date=record["issue_date"],
                 expiry_date=record["expiry_date"],
                 content_type=record["content_type"],
@@ -66,7 +65,7 @@ async def get_all_docs(limit: int, offset: int):
                 uploaded_at=record["uploaded_at"],
                 status=record["status"]
             )
-            
+
             documents.append({
                 **document.model_dump(),
                 "id": record["id"]
@@ -76,17 +75,17 @@ async def get_all_docs(limit: int, offset: int):
 
 
 @router.get("/")
-async def get_documents(limit: int, offset: int):
+async def get_documents(limit: int = 10, offset: int = 0):
     return await get_all_docs(limit, offset)
 
 # ----------------------------------------------------------
 
 
 async def upload_document(document: Document):
-    query = "INSERT INTO main.document (user_id , title, size, issue_date, expiry_date, content_type, uploaded_by, description, uploaded_at, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
+    query = "INSERT INTO main.document (user_id , title, add_document, issue_date, expiry_date, content_type, uploaded_by, description, uploaded_at, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, document.user_id, document.title, document.size, document.issue_date, document.expiry_date, document.content_type, document.uploaded_by, document.description, document.uploaded_at, document.status)
+        await connection.fetchrow(query, document.user_id, document.title, document.add_document, document.issue_date, document.expiry_date, document.content_type, document.uploaded_by, document.description, document.uploaded_at, document.status)
 
         return {**document.model_dump()}
 
@@ -115,15 +114,14 @@ async def delete_doc(id: int):
 # -------------------------------------------------------
 
 async def update_document(id: int, document: Document):
-    query = "UPDATE main.document SET user_id=$2, title = $3, size = $4 ,issue_date = $5, expiry_date = $6, content_type = $7,      uploaded_by = $8 ,description = $9, uploaded_at=$10, status = $11 WHERE id = $1"
-
+    query = "UPDATE main.document SET user_id=$2, title = $3, add_document = $4 ,issue_date = $5, expiry_date = $6, content_type = $7,      uploaded_by = $8 ,description = $9, uploaded_at=$10, status = $11 WHERE id = $1"
 
     async with database.pool.acquire() as connection:
         await connection.execute(query,
-                                 
+
                                  document.user_id,
                                  document.title,
-                                 document.size,
+                                 document.add_document,
                                  document.issue_date,
                                  document.expiry_date,
                                  document.content_type,
@@ -132,7 +130,7 @@ async def update_document(id: int, document: Document):
                                  document.uploaded_at,
                                  document.status,
                                  document.id
-                                )
+                                 )
 
     return {
         "message": "Document updated sucessfully",

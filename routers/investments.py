@@ -21,9 +21,9 @@ async def get_investments(limit: int, offset: int) -> List:
 
         for record in rows:
             investment = Investment(
-                venture_id=record["venture_id"],
                 user_id=record["user_id"],
-                title=record["title"],
+                venture_id=record["venture_id"],
+                name=record["name"],
                 amount=record["amount"],
                 investment_type=record["investment_type"],
                 equity_percent=record["equity_percent"],
@@ -38,6 +38,9 @@ async def get_investments(limit: int, offset: int) -> List:
             })
 
         return investments
+    
+
+
 
 
 @router.get("/")
@@ -59,9 +62,9 @@ async def get_investment_id(id: int):
                 status_code=404, detail=f"Could not find investment with id={id}")
 
         investment = Investment(
-            venture_id=row["venture_id"],
             user_id=row["user_id"],
-            title=row["title"],
+            venture_id=row["venture_id"],
+            name=row["name"],
             amount=row["amount"],
             investment_type=row["investment_type"],
             equity_percent=row["equity_percent"],
@@ -81,14 +84,17 @@ async def get_investment(id: int):
     return await get_investment_id(id)
 
 
+
 # -----------------------------------------------------
 
 
 async def create_investment(investment: Investment):
-    query = "INSERT INTO main.investments (venture_id, user_id, title, amount, investment_type, equity_percent, currency, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+    query = "INSERT INTO main.investments (user_id, venture_id, name, amount, investment_type, equity_percent, currency , invested_on , description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *"
 
     async with database.pool.acquire() as connection:
-        await connection.fetchrow(query, investment.venture_id, investment.user_id, investment.title, investment.amount, investment.investment_type, investment.equity_percent, investment.currency, investment.description)
+        await connection.fetchrow(query, 
+                                  investment.user_id, 
+																	investment.venture_id,  investment.name, investment.amount, investment.investment_type, investment.equity_percent, investment.currency, investment.invested_on,investment.description)
 
         return {**investment.model_dump()}
 
@@ -116,12 +122,12 @@ async def delete(id: int):
 
 
 async def update_investment(id: int, investment: Investment):
-    query = "UPDATE main.investments SET venture_id = $1, user_id = $2, title = $3, amount = $4, investment_type = $5, equity_percent = $6, currency = $7, invested_on = $8, description = $9 WHERE id = $10"
+    query = "UPDATE main.investments SET user_id = $1, venture_id = $2, name = $3, amount = $4, investment_type = $5, equity_percent = $6, currency = $7, invested_on = $8, description = $9 WHERE id = $10"
 
     selectQuery = "SELECT * FROM main.investments WHERE id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, investment.venture_id, investment.user_id, investment.title, investment.amount, investment.investment_type, investment.equity_percent, investment.currency, investment.invested_on, investment.description, id)
+        await connection.execute(query, investment.user_id, investment.venture_id, investment.name, investment.amount, investment.investment_type, investment.equity_percent, investment.currency, investment.invested_on, investment.description, id)
 
         row = await connection.fetch(selectQuery, id)
 

@@ -1,9 +1,9 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi import FastAPI, File, UploadFile
-from ..model import Team
+from ..model import Team, TeamMembers
 from datetime import date, timedelta
-from app.routers import teams
+# from app.routers import teams
 from enum import Enum
 from multiprocessing import connection
 from fastapi import APIRouter, HTTPException, Query
@@ -13,125 +13,233 @@ from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# class Team(BaseModel):  # inseroje ne db
-#     number_of_members: int
-#     names: str
-#     roles: str
-#     startup_before: bool
+
+router = APIRouter(
+    prefix="/teams", responses={404: {"description": "Not found"}})
 
 
+# ------------------------------------------------------
 
-router = APIRouter(prefix="/teams", responses={404: {"description": "Not found"}})
-
-
-#------------------------------------------------------
-
-async def get_team_id(team_id: int):
-	query = "SELECT * FROM main.teams WHERE id = $1"
-
-	async with database.pool.acquire() as connection:
-		row = await connection.fetch(query, team_id)
-
-	if row is None:
-		raise HTTPException(
-            status_code=404, detail=f"Could not find team with id={team_id}")
-	
-
-	team = Team(
-		number_of_members= "number_of_members",
-		names= "names",
-		roles=row["roles"],
-		startup_before=row["startup_before"]
-	)
-	
-	return {
-		"team_id" : row["id"],
-		**team.model_dump()
-	}
+# tek teams
+# ky useri tek cili team eshte member
+# from team members tm select ktot t dhenat me join
 
 
-@router.get("/{id}", response_model=Team)
-async def get_id(team_id: int):
-	return await get_team_id(team_id)
-#---------------------------------------------------------
+async def get_team_id(id: int):
+    query = "SELECT * FROM main.teams WHERE id = $1"
+
+    async with database.pool.acquire() as connection:
+        row = await connection.fetchrow(query, id)
+
+    if row is None:
+        raise HTTPException(
+            status_code=404, detail=f"Could not find team with id={id}")
+
+    team = Team(
+        id="id",
+        name="name",
+        created_at="created_at"
+    )
+
+    return {
+        "id": row["id"],
+        **team.model_dump()
+    }
+
+
+@router.get("/{id}/", response_model=Team)
+async def get_id(id: int):
+    return await get_team_id(id)
+
+# ---------------------------------------------------------
 
 
 async def get_teams(limit: int, offset: int) -> List:
-	query = "SELECT * FROM main.teams LIMIT $1 OFFSET $2"
+    query = "SELECT * FROM main.teams LIMIT $1 OFFSET $2"
 
-	async with database.pool.acquire() as connection:
-		rows= await connection.fetch(query, limit, offset)
+    async with database.pool.acquire() as connection:
+        rows = await connection.fetch(query, limit, offset)
 
-		teams = []
-		for record in rows:
+        print("-----------------------------------------------------")
+        print("-----------------------------------------------------")
+        print(rows)
+        print("-----------------------------------------------------")
+        print("-----------------------------------------------------")
 
-			team = Team(
-				names=record["names"],
-				number_of_members= record["number_of_members"],
-				roles=record["roles"],
-				startup_before=record["startup_before"]
-			)
+        teams = []
 
-			teams.append({
-				**team.model_dump(),
-				"id": record["id"]
-			})
+        for record in rows:
+            team = Team(
 
-		return teams
-	
+                id=record["id"],
+                name=record["name"],
+                created_at=record["created_at"]
+
+            )
+
+            
+
+            teams.append({
+                **team.model_dump(),
+                "id": record["id"]
+            })
+
+        return teams
+
 
 @router.get("/")
 async def get_all_teams(limit: int = 10, offset: int = 0):
-	return await get_teams(limit, offset)
+    return await get_teams(limit, offset)
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
+# krijon nje team - merr id te team qe ke krijuar - insert nje new team member
+# links each member to that team
 
-async def create_team(team: Team):
-	query = "INSERT INTO main.teams (number_of_members, names, roles, startup_before) VALUES ($1, $2, $3, $4)"
 
-	async with database.pool.acquire() as connection:
-		await connection.execute(query, team.number_of_members, team.names, team.roles, team.startup_before)
+# list me id te userave qe do ti bej members tek team
+async def create_team(team: Team, members: List[int]):
+    query = "INSERT INTO main.teams (name) VALUES ($1) RETURNING *"
 
-		return {**team.model_dump()}
-	
+    async with database.pool.acquire() as connection:
+        team_rows = await connection.fetch(query, team.name)
+
+        print("-------------------------------------------------")
+        print(team_rows)
+        print("-------------------------------------------------")
+        new_team = team_rows[0]
+        inserted_members = []
+
+        tm_query = "INSERT INTO main.team_members (team_id, member_id) VALUES ($1, $2) RETURNING *"
+
+        for id in members:  # id e nje useri qe do t besh member
+            # i jep id e team dhe id te userit qe do rregjistorhet si member
+            new_member = await connection.fetch(tm_query, new_team["id"], id)
+            # per secilen id te lista- insert id e team dhe id e userit qe do behet member
+
+            inserted_members.append(new_member)
+            
+        return {
+          "team": new_team,
+          "members": inserted_members
+        }
 
 
 @router.post("/")
-async def create(team: Team):
-	return await create_team(team)
+async def create(team: Team, members: List[int]):
+    return await create_team(team, members)
 
-#----------------------------------------------------------------
+
+# async def create_team(team: Team, members : List[str]):
+#     query = "INSERT INTO main.teams (name) VALUES ($1) RETURNING id"
+
+#     async with database.pool.acquire() as connection:
+#         team_rows = await connection.fetch(query)
+
+#         team_id=team_rows[0]["id"];
+
+#         for member_id in members:
+#             tm_query = "INSERT INTO main.team_members (team_id, member_id) VALUES ($1, $2)"
+#             inserted_member = await connection.execute(tm_query, team_id, member_id)
+
+
+#         inserted_members = []
+
+#         for member_id in members:
+#             inserted_members.append(member_id)
+
+#     return inserted_members
+
+
+# @router.post("/")
+# async def create(team: Team, members: List[str]):
+#     return await create_team(team, members)
+
+
+# ----------------------------------------------------------------
 
 async def update_team(id: int, team: Team):
-	query = "UPDATE main.teams SET number_of_members = $2, names = $3, roles=$4, startup_before=$5 WHERE id=$1"
+    query = "UPDATE main.teams SET name = $2 , created_at= $3 WHERE id=$1"
 
-	async with database.pool.acquire() as connection:
-		await connection.execute(query, id, team.number_of_members, team.names, team.roles, team.startup_before)
+    async with database.pool.acquire() as connection:
+        await connection.execute(query, id, team.name, team.created_at)
 
-
-		return {
+        return {
             "message": "Team updated successfully",
             "user": {"id": id, **team.model_dump()}
-    }
-	
+        }
+
 
 @router.put("/{id}")
 async def update_team_id(id: int, team: Team):
-	return await update_team(id, team)
+    return await update_team(id, team)
 
-#------------------------------------------------------------------
+# ------------------------------------------------------------------
 
-async def delete_team(id:int):
-	query = "DELETE FROM main.teams WHERE id = $1"
 
-	async with database.pool.acquire() as connection:
-		await connection.execute(query, id)
+async def delete_team(id: int):
+    query = "DELETE FROM main.teams WHERE id = $1"
 
-	return f"Team with id {id} deleted"
+    async with database.pool.acquire() as connection:
+        await connection.execute(query, id)
+
+    return f"Team with id {id} deleted"
+
 
 @router.delete("/{id}")
 async def delete(id: int):
-	return await delete_team(id)
+    return await delete_team(id)
 
 
+# ----------------------------------------
+# te vijn members te ktij team
+
+
+# /teams/id/members
+
+
+# endpoint that lists all teams a user belongs to
+
+async def list_user_teams(team: Team, id: int):
+    query = "SELECT u.id, tm.member_id, tm.team_id FROM main.users u INNER JOIN main.team_members tm ON u.id = tm.id WHERE u.id = $1"
+
+    async with database.pool.acquire() as connection:
+        joined_row = await connection.fetch(query)
+
+
+# async def list_user_teams(id: int, member: TeamMembers):
+
+#     query = "SELECT users.id , team_members.member_id, team_members.team_id FROM main.users INNER JOIN main.team_members ON users.id = team_members.member_id WHERE users.id = $1"
+
+#     async with database.pool.acquire() as connection:
+#        rows = await connection.fetch(query, id, member)
+
+#        user_teams = []
+
+#        for record in rows:
+#             user_team = TeamMembers(
+#                 team_id = record["team_id"],
+#                 member_id=record["member_id"],
+#                 created_at=record["created_at"]
+# 						)
+
+#             user_teams.append(user_team)
+
+#        return user_teams
+
+
+# @router.get("/{id}/members")
+# async def list_teams(id: int, member: TeamMembers):
+#     return await list_user_teams(id, member)
+
+
+# ----------------------------------------------------
+
+
+# mos merr dhe id e team dhe te member
+
+# teams/id/members - nuk behet endpoint i ri per kte entitetin qe po krijon
+
+# @router.get("/{id}/{member_id}")
+# async def get_all_teams_of_member(id:int, member_id:int):
+#     return await list_user_teams(id, member_id)

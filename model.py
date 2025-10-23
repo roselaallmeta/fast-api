@@ -3,8 +3,8 @@ from decimal import Decimal
 import decimal
 from enum import Enum
 from typing import Optional
-from fastapi import FastAPI, File
-from pydantic import BaseModel, field_validator
+from fastapi import FastAPI, File, UploadFile
+from pydantic import BaseModel, FilePath, HttpUrl, field_validator
 from datetime import datetime
 
 
@@ -12,6 +12,18 @@ class StatusEnum(str, Enum):
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
+
+
+class ProfileStatusEnum(str, Enum):
+    active = "active"
+    inactive = "inactive"
+    deactivated = "deactivated"
+
+
+class VentureStatusEnum(str, Enum):
+    active = "active"
+    archived = "archived"
+    banned = "banned"
 
 
 class InvestmentTypeEnum(str, Enum):
@@ -51,19 +63,7 @@ class FundingStageEnum(str, Enum):
 class CurrencyEnum(str, Enum):
     USD = "USD"
     EUR = "EUR"
-    JPY = "JPY"
     ALL = "ALL"
-    GBP = "GBP"
-    CHF = "CHF"
-    CAD = "CAD"
-    AUD = "AUD"
-    CNY = "CNY"
-    SEK = "SEK"
-    NZD = "NZD"
-    KRW = "KRW"
-    SGD = "SGD"
-    NOK = "NOK"
-    INR = "INR"
 
 
 class GenderEnum(str, Enum):
@@ -79,34 +79,27 @@ class UserRoleEnum(str, Enum):
     institution = "institution"
     admin = "admin"
     business = "business"
-    
+
 
 class User(BaseModel):
+    id: Optional[int] = None
     name: str
     role: UserRoleEnum
     email: str
     password: str
+    created_at: Optional[datetime] = None
+
+
+class UserProfile(BaseModel):
+    id: Optional[int] = None
+    user_id: int
+    phone_number: str
+    created_at: Optional[datetime] = None
     gender: GenderEnum
-
-    # @field_validator("name", "email", "password", "role" , "gender")
-    # def field_must_not_be_empty(cls, v):
-    #     if v == 0:
-    #         raise ValueError("Fields must not be empty")
-    #     return v
-    
-    
-    # @field_validator("password")
-    # def password_validation(p: str):
-    #     if (p.__len__ < 5):
-    #         raise ValueError("Password cannot have less than 5 characters.")
-    #     return {"Try with a different email"}
-
-
-    # @field_validator("email")
-    # def email_validation(e, item):
-    #     if item in e not in ["@", "."]:
-    #         raise ValueError("Email must contain {item}")
-    #     return {"Try with a different email"}
+    updated_at: Optional[datetime] = None
+    status: ProfileStatusEnum
+    industry: IndustryEnum
+    description: str
 
 
 class Venture(BaseModel):
@@ -121,32 +114,25 @@ class Venture(BaseModel):
     funding_goal: decimal.Decimal
     total_funding: decimal.Decimal
     valuation: decimal.Decimal
-    is_active: bool
-    
+    status: VentureStatusEnum
+
+
+class VentureTeam(BaseModel):
+    venture_id: int
+    team_id: int
+    created_at: Optional[datetime] = None
+
 
 class VentureMembers(BaseModel):
-    venture_id :int
-    member_id : int
-    name : str
-    email : str
-    position : str
-    gender : GenderEnum
-    
-
-class UserProfile(BaseModel):
-    user_id: int
-    phone_number: str
-    created_at: datetime
-    updated_at: datetime
-    last_login: datetime
-    is_active: bool
-    description: str
+    member_id: int
+    venture_id: int
+    name: str
 
 
 class Investment(BaseModel):
-    user_id : int
+    user_id: int
     venture_id: int
-    title: str
+    name: str
     amount: decimal.Decimal
     investment_type: InvestmentTypeEnum
     equity_percent: decimal.Decimal
@@ -156,7 +142,7 @@ class Investment(BaseModel):
 
 
 class PitchDecks(BaseModel):  # inseroje ne db
-    deck_id : int
+    venture_id: int
     title: str
     file_url: str
     description: str
@@ -164,17 +150,30 @@ class PitchDecks(BaseModel):  # inseroje ne db
     updated_at: datetime
 
 
-class Team(BaseModel):  # inseroje ne db
-    number_of_members: int
-    names: str
-    roles: str
-    startup_before: bool
+# class User(BaseModel):
+#     id: Optional[int] = None
+#     name: str
+#     role: UserRoleEnum
+#     email: str
+#     password: str
+#     created_at: Optional[datetime] = None
+
+
+class Team(BaseModel):
+    name: str
+    created_at: Optional[datetime] = None
+
+
+class TeamMembers(BaseModel):
+    team_id: int
+    member_id: int
+    created_at: Optional[datetime] = None
 
 
 class Document(BaseModel):
     user_id: int
     title: str
-    size: int
+    add_document: str
     issue_date: datetime
     expiry_date: datetime
     content_type: str
@@ -187,8 +186,8 @@ class Document(BaseModel):
 class BankingDetails(BaseModel):
     user_id: int
     account_number: str
-    bic: str
     iban: str
+    bic: str
     bank_name: str
     bank_country: str
     currency: CurrencyEnum
@@ -196,6 +195,5 @@ class BankingDetails(BaseModel):
     is_bank_verified: bool
 
 
-
-class UpdateVenture(Venture):    
+class UpdateVenture(Venture):
     pass

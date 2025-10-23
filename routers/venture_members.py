@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from ..model import VentureMembers
 from ..src.commons.postgres import database
 from typing import List, Optional
+from ..model import VentureMembers
 
 
 router = APIRouter(prefix="/venture_members", responses={404: {"description": "Not found"}})
@@ -24,10 +24,7 @@ async def get_members(limit: int, offset: int)-> List:
 			member = VentureMembers(
 				venture_id=record["venture_id"],
         member_id=record["member_id"],
-        name=record["name"],
-        email=record["email"],
-        position=record["position"],
-				gender=record["gender"]
+        name=record["name"]
 			)
 
 			venture_members.append({
@@ -42,9 +39,6 @@ async def get_members(limit: int, offset: int)-> List:
 @router.get("/")
 async def get(limit: int = 0, offset: int = 10):
 	return await get_members(limit, offset)
-
-	
-
 
 #---------------------------------------------
 
@@ -61,10 +55,7 @@ async def get_member_id(id: int):
 	member = VentureMembers(
 		    venture_id=row["venture_id"],
         member_id=row["member_id"],
-        name=row["name"],
-        email=row["email"],
-        position=row["position"],
-				gender=row["gender"]
+        name=row["name"]
 	)
 
 
@@ -73,7 +64,7 @@ async def get_member_id(id: int):
 		**member.model_dump()
 	}
 
-###TEST PA RESPONSE MODEL
+
 @router.get("/{id}")
 async def get_id(id: int):
 	return await get_member_id(id)
@@ -83,10 +74,10 @@ async def get_id(id: int):
 
 
 async def post_member(member: VentureMembers):
-	query = "INSERT INTO main.venture_members(venture_id, member_id, name, email, position, gender) VALUES ($1, $2, $3, $4, $5, $6)"
+	query = "INSERT INTO main.venture_members( venture_id, member_id, name) VALUES ( $1, $2, $3 )"
 
 	async with database.pool.acquire() as connection:
-		await connection.execute(query, member.venture_id, member.member_id, member.name, member.email, member.position, member.gender)
+		await connection.execute(query, member.venture_id, member.member_id, member.name )
 
 
 		return {**member.model_dump()}
@@ -101,10 +92,10 @@ async def post(member: VentureMembers):
 
 
 async def update_member(id: int, member: VentureMembers):
-	query = "UPDATE main.venture_members SET venture_id = $2, member_id=$3, name = $4, email =$5, position=$6, gender=$7 WHERE id = $1"
+	query = "UPDATE main.venture_members SET venture_id = $2, member_id=$3, name = $4 WHERE id = $1"
 
 	async with database.pool.acquire() as connection:
-		await connection.execute(query, id, member.venture_id, member.member_id, member.name, member.email, member.position, member.gender)
+		await connection.execute(query, id, member.venture_id, member.member_id, member.name)
 
 
 		return {

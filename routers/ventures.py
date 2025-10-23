@@ -1,7 +1,7 @@
 from enum import Enum
 from multiprocessing import connection
 from fastapi import APIRouter, HTTPException, Query
-from ..model import Venture
+from ..model import Venture, User
 from ..src.commons.postgres import database
 from typing import List, Optional
 from typing import Annotated
@@ -16,7 +16,7 @@ router = APIRouter(
 
 
 async def get_all_ventures(limit: int, offset: int) -> List:
-    query = "SELECT id, name, created_at, phone_number, email, description,industries, funding_stage, website_url, funding_goal, total_funding, valuation, is_active FROM main.ventures LIMIT $1 OFFSET $2"
+    query = "SELECT id, name, created_at, phone_number, email, description,industries, funding_stage, website_url, funding_goal, total_funding, valuation, status FROM main.ventures LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
@@ -36,12 +36,12 @@ async def get_all_ventures(limit: int, offset: int) -> List:
                 funding_goal=record["funding_goal"],
                 total_funding=record["total_funding"],
                 valuation=record["valuation"],
-                is_active=record["is_active"]
+                status=record["status"]
             )
 
             ventures.append({
                 "id": record["id"],
-                **venture.model_dump(),
+                **venture.model_dump()
             })
 
         return ventures
@@ -51,27 +51,60 @@ async def get_all_ventures(limit: int, offset: int) -> List:
 async def get_ventures(limit: int, offset: int):
     return await get_all_ventures(limit, offset)
 
+
+# -----------------------------------------------------------------------------
+
+
+# async def add_member(id: int, member: Venture):
+#     query = "INSERT INTO main.ventures(name, phone_number, email, description, industries, funding_stage, website_url , funding_goal, total_funding, valuation, is_active) VALUES ($1, $2, $3, $4, $5, $6 ,$7 ,$8 ,$9 ,$10, $11) RETURNING *"
+
+#     async with database.pool.acquire() as connection:
+#         await connection.fetchrow(query,
+#                                   member.name,
+#                                   member.phone_number,
+#                                   member.email,
+#                                   member.description,
+#                                   member.industries,
+#                                   member.funding_stage,
+#                                   member.website_url,
+#                                   member.funding_goal,
+#                                   member.total_funding,
+#                                   member.valuation,
+#                                   member.is_active)
+
+#         return {**member.model_dump()}
+
+
+# @router.post("/{id}/members")
+# async def post(venture: Venture):
+#     return await create_venture(venture)
+
+
+# -----------------------------------------------------------------------------
+
+
 # -----------------------------------------------------------------------------
 
 
 async def create_venture(venture: Venture):
-    query = "INSERT INTO main.ventures(name, phone_number, email, description, industries, funding_stage, website_url , funding_goal, total_funding, valuation, is_active) VALUES ($1, $2, $3, $4, $5, $6 ,$7 ,$8 ,$9 ,$10, $11)"
+    query = "INSERT INTO main.ventures(name, created_at ,phone_number, email, description, industries, funding_stage, website_url , funding_goal, total_funding, valuation, status) VALUES ($1, $2, $3, $4, $5, $6 ,$7 ,$8 ,$9 ,$10, $11, $12) RETURNING *"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, 
-                                 venture.name,
-                                 venture.phone_number, 
-                                 venture.email,
-                                 venture.description, 
-                                 venture.industries, 
-                                 venture.funding_stage, 
-                                 venture.website_url,
-                                 venture.funding_goal, 
-                                 venture.total_funding,
-                                 venture.valuation, 
-                                 venture.is_active)
+        elefanti_roz = await connection.fetchrow(query,
+                                                 venture.name,
+                                                 venture.created_at,
+                                                 venture.phone_number,
+                                                 venture.email,
+                                                 venture.description,
+                                                 venture.industries,
+                                                 venture.funding_stage,
+                                                 venture.website_url,
+                                                 venture.funding_goal,
+                                                 venture.total_funding,
+                                                 venture.valuation,
+                                                 venture.status)
 
-        return {**venture.model_dump()}
+        return elefanti_roz
 
 
 @router.post("/")
@@ -104,7 +137,7 @@ async def get_venture_id(id: int):
         funding_goal=row["funding_goal"],
         total_funding=row["total_funding"],
         valuation=row["valuation"],
-        is_active=row["is_active"]
+        status=row["status"]
     )
 
     return {
@@ -113,9 +146,51 @@ async def get_venture_id(id: int):
     }
 
 
-@router.get("/{id}", response_model=Venture)
+@router.get("/{id}")
 async def get_id(id: int):
     return await get_venture_id(id)
+
+
+# -----------------------------------------------------------------------------
+
+async def get_venture_id_members(id: int, limit: int, offset: int):
+    query = '''
+      SELECT u.user_id, u.name, u.role, u.email, u.gender, v.valuation
+      FROM main.venture_members vm 
+      JOIN main.users u
+        ON u.user_id = vm.member_id 
+      JOIN main.ventures v
+        ON v.id = vm.venture_id 
+      WHERE vm.venture_id = $1
+      LIMIT $2 OFFSET $3
+      '''
+
+    async with database.pool.acquire() as connection:
+        rows = await connection.fetch(query, id, limit, offset)
+
+        users = []
+
+        for record in rows:
+            user = User(
+                name=record["name"],
+                email=record["email"],
+                role=record["role"],
+                gender=record["gender"],
+                password="placeholder"
+            )
+
+            users.append({
+                **user.model_dump(),
+                "user_id": record["user_id"],
+                "valuation": record["valuation"]
+            })
+
+        return users
+
+
+@router.get("/{id}/members")
+async def get_id_members(id: int, limit: int = 10, offset: int = 0):
+    return await get_venture_id_members(id, limit, offset)
 
 # -----------------------------------------------------------------------------
 
@@ -129,7 +204,6 @@ async def delete_venture(id: int):
         return {
             "message": f"Venture with id {id} deleted successfully"
         }
-    
 
 
 @router.delete("/{id}")
@@ -140,20 +214,20 @@ async def delete(id: int):
 
 
 async def update_venture(id: int, venture: Venture):
-    query = "UPDATE main.ventures SET name= $2, created_at=$3,  phone_number= $4, email= $5, description=$6, industries=$7, funding_stage=$8, website_url= $9, funding_goal=$10, total_funding=$11, valuation=$12, is_active=$13 WHERE id = $1"
+    query = "UPDATE main.ventures SET name= $2, created_at=$3,  phone_number= $4, email= $5, description=$6, industries=$7, funding_stage=$8, website_url= $9, funding_goal=$10, total_funding=$11, valuation=$12, status=$13 WHERE id = $1"
 
     async with database.pool.acquire() as connection:
         await connection.execute(query, venture.name, venture.created_at,
-                                 venture.phone_number, 
+                                 venture.phone_number,
                                  venture.email,
-                                 venture.description, 
-                                 venture.industries, 
-                                 venture.funding_stage, 
+                                 venture.description,
+                                 venture.industries,
+                                 venture.funding_stage,
                                  venture.website_url,
-                                 venture.funding_goal, 
+                                 venture.funding_goal,
                                  venture.total_funding,
-                                 venture.valuation, 
-                                 venture.is_active)
+                                 venture.valuation,
+                                 venture.status)
 
         return {
             "message": "Venture updated successfully",
