@@ -2,7 +2,7 @@ from enum import Enum
 from multiprocessing import connection
 from multiprocessing.managers import BaseManager
 from fastapi import APIRouter, Depends, HTTPException, Query
-from ..model import GenderEnum, User, UserRoleEnum
+from ..model import GenderEnum, User, UserLogin, UserRoleEnum
 from ..src.commons.postgres import database
 from typing import List, Optional
 from typing import Annotated
@@ -90,18 +90,6 @@ async def get_id(id: int):
 
 # -----------------------------------------------------------------------------
 
-
-   
-
-
-
-
-
-
-
-#---------------------------------------
-
-
 async def delete_user(id: int):
     query = "DELETE FROM main.users WHERE user_id = $1"
 
@@ -136,91 +124,81 @@ async def put(user_id: int, user: User):
 
 # -----------------------------------------------------
 
+#bej return userId te personit qe ka ber login ose register
 
-async def login(email: str, password: str):
+
+
+async def login(user: UserLogin):
     errors = []
     success = False
 
-    if email == None or email == '':
+    if user.email == '':
         errors.append('Email not provided')
-        return {"errors": errors, "success": success}
 
-    if password == None or password == '':
+    if user.password == '':
         errors.append('Password not provided')
-        return {"errors": errors, "success": success}
+        
 
-    query = "SELECT email=$3, password=$4 FROM main.users"
-
+    query = "SELECT * FROM main.users WHERE email = $1 AND password = $2"
     async with database.pool.acquire() as connection:
-        user = await connection.execute(query)
-
-        if user == None:
+        fetched_user = await connection.fetchrow(query, user.email, user.password)
+        
+        if fetched_user is None:
             errors.append('User not found')
+            
+        else:
+            if user.password != fetched_user['password']:
+                answer_error = errors.append('Password is invalid')
+                print(answer_error)
+                
+            if user.email != fetched_user['email']:
+                email_error =  errors.append('Email is invalid')
+                print(email_error)
+    
+        if errors:
             return {"errors": errors, "success": success}
-
-        if user.password != password:
-            errors.append('Password is invalid')
-            return {"errors": errors, "success": success}
-
-        if user.email != email:
-            errors.append('Email is invalid')
-            return {"errors": errors, "success": success}
-
+            
         success = True
-        return {"errors": errors, "success": success}
-
+        return {"errors": errors, "success": success, "user_id": user.id}
+    
 
 @router.post("/login")
-async def user_login(body):
-    return body
+async def user_login(user: UserLogin):
+    return await login(user)
+
 # --------------------------------------------------------------------
-# async def logout(user: User):
-# 	errors = []
-# 	success = False
 
-
-# 	if user.user_login():
-
-
-# ------------------------------------------------------
-async def register_user(user: User):  # email, password, role, gender, name
+async def register_user(user: User): 
     errors = []
     success = False
-
-    query = "INSERT INTO main.users (name, email, role, gender, password) VALUES ($1, $2, $3, $4, $5)"
-
-    if user.name == None or user.name == '':
-        errors.append('Name not provided')
-        return {"errors": errors, "success": success}
+    
+    if user.role == None or user.role == '':
+        errors.append('User role not provided')
 
     if user.email == None or user.email == '' or '@' not in user.email or '.' not in user.email:
         errors.append('Email not provided or is invalid')
-        return {"errors": errors, "success": success}
-
-    if '@' in user.email or '.' in user.email:
-        return {"errors": errors, "success": success}
-
-    if user.role == None or user.role == '':
-        errors.append('User role not provided')
-        return {"errors": errors, "success": success}
-
-    if user.gender == None or user.gender == '':
-        errors.append('User gender not provided')
-        return {"errors": errors, "success": success}
 
     if user.password == None or user.password == '':
         errors.append('Password not provided')
+       
+    if errors:
         return {"errors": errors, "success": success}
-
+        
+            
+    query = "INSERT INTO main.users (name, role, email, password) VALUES ($1, $2, $3, $4) RETURNING id"
     async with database.pool.acquire() as connection:
-        user = await connection.execute(query,  user.name, user.password, user.email, user.gender, user.role)
+        user = await connection.execute(query, user.name, user.role, user.email, user.password)
 
         success = True
-        return {"errors": errors, "success": success}
+        return {"errors": errors, "success": success, "user_id": user.id }
 
     return user
 
 
+@router.post("/register")
+async def register(user: User):
+    return await register_user(user)
+  
 # -----------------------------------------------------------------------------------
 
 

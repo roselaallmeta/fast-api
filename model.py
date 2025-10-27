@@ -100,7 +100,12 @@ class UserProfile(BaseModel):
     status: ProfileStatusEnum
     industry: IndustryEnum
     description: str
-
+    
+class UserLogin(BaseModel):
+    email: str
+    password: str
+    id: Optional[int] = None
+    
 
 class Venture(BaseModel):
     name: str
@@ -148,15 +153,6 @@ class PitchDecks(BaseModel):  # inseroje ne db
     description: str
     created_at: datetime
     updated_at: datetime
-
-
-# class User(BaseModel):
-#     id: Optional[int] = None
-#     name: str
-#     role: UserRoleEnum
-#     email: str
-#     password: str
-#     created_at: Optional[datetime] = None
 
 
 class Team(BaseModel):

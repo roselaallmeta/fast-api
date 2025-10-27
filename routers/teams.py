@@ -20,9 +20,6 @@ from pydantic import BaseModel
 router = APIRouter(
     prefix="/teams", responses={404: {"description": "Not found"}})
 
-
-
-
 # ------------------------------------------------------
 
 # tek teams
@@ -57,7 +54,13 @@ async def get_id(id: int):
     return await get_team_id(id)
 
 # ---------------------------------------------------------
-async def get_teams(limit: int, offset: int) -> List:
+
+# perdor funx per t kontrollu nese ky useri qe ka id me member id esht member
+
+# e ve none memberId sepse mundet qe t jet optional
+
+
+async def get_teams(limit: int, offset: int, memberId: int = None) -> List:
     query = "SELECT * FROM main.teams LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
@@ -68,26 +71,41 @@ async def get_teams(limit: int, offset: int) -> List:
         print(rows)
         print("-----------------------------------------------------")
         print("-----------------------------------------------------")
+        
+
+#  morri gjithe teams
 
         teams = []
-
+        success = True
+        
         for record in rows:
+
+            # gjith teams ku useri qe ka id = memberId esht member
+            if (memberId):
+                #Ne castin qe eshte defined -> Merr nga team_members cdo team ku ky user-i eshte member
+                members_query = "SELECT team_id, member_id FROM main.team_members WHERE team_id = $1 AND member_id = $2"
+                memberId_defined = await connection.fetch(members_query)
+                return memberId_defined
+             
+
             team = Team(
                 id=record["id"],
                 name=record["name"],
-                created_at=record["created_at"]
+                created_at=record["created_at"],
+                isMember=record(bool["memberId"])
             )
 
             teams.append({
                 **team.model_dump(),
-                "id": record["id"]
+                "id": record["id"],
+                "isMember": bool
             })
         return teams
 
 
-@router.get("/")
-async def get_all_teams(limit: int = 10, offset: int = 0):
-    return await get_teams(limit, offset)
+@router.get("/?memberId")
+async def get_all_teams(limit: int = 10, offset: int = 0, memberId = bool):
+    return await get_teams(limit, offset, memberId)
 # -----------------------------------------------------------
 # krijon nje team - merr id te team qe ke krijuar - insert nje new team member
 # links each member to that team
@@ -168,48 +186,42 @@ async def leave_team(team_id: int, member_id: int):
 # useri mund te behet join vetem nese NUK ESHT ALREADY MEMBER
 
 
-
-
-
-#TODO
+# TODO
 # a duhet ti bej authentication per userin
 # async def join_team(team_id: int, id: int):
 #     query = "SELECT * FROM main.team_members WHERE team_id = $1 AND member_id = $2"
-#     # apo duhet ta bej query qe te bej retrieve all data of user 
-  
+#     # apo duhet ta bej query qe te bej retrieve all data of user
+
 #     async with database.pool.acquire() as connection:
 #         selected_member = await connection.fetch(query, team_id, id)
-        
+
 #         if not selected_member:
 #             insert_query = "INSERT INTO main.team_members(team_id, member_id) VALUES ($1, $2) RETURNING *"
 #             await connection.fetch(insert_query, team_id, id)
 #             return f"User with ID {id} has joined the team sucessfully."
-        
+
 
 #         else:
 #             return {"error": "User is already a member of this team."}
-        
+
 
 # do id e userit dhe id e team
 async def join_team(team_id: int, member_id: int):
     query = "SELECT * FROM main.users WHERE id = $1"
-    
+
     async with database.pool.acquire() as connection:
         selected_user = await connection.fetchrow(query, team_id, member_id)
-        
-        if(selected_user):
+
+        if (selected_user):
             new_query = "SELECT * FROM main.team_members WHERE team_id = $1 AND member_id = $2"
             existing_member = await connection.fetch(new_query, team_id, member_id)
             if not existing_member:
                 insert_query = "INSERT INTO main.team_members (team_id, member_id) VALUES ($1, $2)"
                 insert_member = await connection.fetch(insert_query, team_id, member_id)
 
-            return insert_query 
-                
-    
-                
-                     
-            
+            return insert_query
+
+
 @router.post("/{team_id}/join/{id}")
 async def user_join_team(team_id: int, id: int):
     return await join_team(team_id, id)
