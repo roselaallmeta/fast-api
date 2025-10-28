@@ -172,6 +172,9 @@ async def register_user(user: User):
     errors = []
     success = False
     
+    if user.name == None or user.name == '':
+        errors.append('User name not provided')
+    
     if user.role == None or user.role == '':
         errors.append('User role not provided')
 
