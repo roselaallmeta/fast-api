@@ -102,9 +102,9 @@ class UserProfile(BaseModel):
     description: str
     
 class UserLogin(BaseModel):
+    id: Optional[int] = None
     email: str
     password: str
-    id: Optional[int] = None
     
 
 class Venture(BaseModel):

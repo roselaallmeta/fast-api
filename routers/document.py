@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi import HTTPException
 from ..model import Document
 from ..src.commons.postgres import database
 
@@ -128,8 +129,8 @@ async def update_document(id: int, document: Document):
                                  document.uploaded_by,
                                  document.description,
                                  document.uploaded_at,
-                                 document.status,
-                                 document.id
+                                 document.status
+                                
                                  )
 
     return {

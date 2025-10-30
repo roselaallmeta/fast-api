@@ -99,6 +99,8 @@ createStatements = {
             last_login TIMESTAMP DEFAULT NOW()
         );
     """,
+    
+		
 
     # KA ONE TO ONE RELATIONSHIP ME USERS , NJE USER KA NJE PROFILE, DHE NJE PROFILE BELONGS TO ONE USER
     "user_profiles": """
@@ -138,7 +140,7 @@ createStatements = {
         );
     """,
 
-        "teams": """
+    "teams": """
         CREATE TABLE IF NOT EXISTS main.teams (
             id SERIAL PRIMARY KEY,
             name VARCHAR(255) NOT NULL,

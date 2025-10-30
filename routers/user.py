@@ -1,13 +1,14 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
 from enum import Enum
 from multiprocessing import connection
 from multiprocessing.managers import BaseManager
-from fastapi import APIRouter, Depends, HTTPException, Query
 from ..model import GenderEnum, User, UserLogin, UserRoleEnum
 from ..src.commons.postgres import database
 from typing import List, Optional
 from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, field_validator
+
+
 
 
 router = APIRouter(
@@ -107,10 +108,10 @@ async def delete(id: int):
 
 
 async def update_user(user_id: int, user: User):
-    query = "UPDATE main.users SET name = $2, role = $3, email = $4, password = $5, gender = $6 WHERE user_id = $1"
+    query = "UPDATE main.users SET name = $2, role = $3, email = $4, password = $5 WHERE user_id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, user_id, user.name, user.role, user.email, user.password, user.gender)
+        await connection.execute(query, user_id, user.name, user.role, user.email, user.password)
 
         return {
             "message": "User updated sucessfully",
@@ -132,34 +133,30 @@ async def login(user: UserLogin):
     errors = []
     success = False
 
-    if user.email == '':
-        errors.append('Email not provided')
-
-    if user.password == '':
-        errors.append('Password not provided')
+    if user.email == '' or  user.password == '':
+        errors.append('Email or password not provided')
         
-
     query = "SELECT * FROM main.users WHERE email = $1 AND password = $2"
     async with database.pool.acquire() as connection:
-        fetched_user = await connection.fetchrow(query, user.email, user.password)
+        fetched_user = await connection.fetchrow(query , user.email, user.password)
         
         if fetched_user is None:
             errors.append('User not found')
-            
         else:
-            if user.password != fetched_user['password']:
-                answer_error = errors.append('Password is invalid')
-                print(answer_error)
-                
-            if user.email != fetched_user['email']:
-                email_error =  errors.append('Email is invalid')
-                print(email_error)
-    
+            success = True
+            return {
+                "errors": errors,
+                "success" : success,
+                "id" : fetched_user["id"],
+                "email" : fetched_user["email"]
+						}
+            
+         
         if errors:
             return {"errors": errors, "success": success}
             
         success = True
-        return {"errors": errors, "success": success, "user_id": user.id}
+        return {"errors": errors, "success": success}
     
 
 @router.post("/login")
