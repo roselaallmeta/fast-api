@@ -29,8 +29,7 @@ async def get_user_email(email: str) -> UserLogin | None:
     query = "SELECT * FROM main.users WHERE email = $1"
     async with database.pool.acquire() as connection:
         row = await connection.fetchrow(query, email)
-        # i bere fetch userit me email e dhen
-
+      
     if row is None:
         raise HTTPException(
             status_code=404, detail=f"Could not find user")
@@ -82,6 +81,7 @@ async def authenticate_user(username: str, password: str) -> UserLogin:
     return user
 
 
+
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -120,21 +120,22 @@ async def login_for_access_token(
 ) -> Token:
     user = await authenticate_user(
         form_data.username, form_data.password)  # e definon sic e do forma
-
-    if user:
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-        data={"sub": user.email}, 
-        expires_delta=access_token_expires
+    
+    if not user:
+         raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect username or password",
+        headers={"WWW-Authenticate": "Bearer"},
     )
         
+    if user:
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = await create_access_token(
+        data={"sub": user.email}, 
+        expire=access_token_expires
+    )
         
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        
-
     return Token(access_token=access_token, token_type="bearer")
+
+
+# a json web token always has 3 parts-> HEADER. PAYLOAD. SIGNATURE
