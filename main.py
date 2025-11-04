@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from .src.commons.postgres import database
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+from .security import auth
 
 
 from .routers import (
@@ -18,6 +19,12 @@ from .routers import (
     user_profiles,
     team_members
 )
+
+from .security import (
+    jwt_tokens
+)
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,7 +45,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-   
 )
 
 app.include_router(user.router)
@@ -51,16 +57,11 @@ app.include_router(banking_details.router)
 app.include_router(venture_members.router)
 app.include_router(user_profiles.router)
 app.include_router(team_members.router)
+app.include_router(user.router)
+app.include_router(jwt_tokens.router)
+
 
 
 @app.get("/")
 def root():
     return {"message": "Server is running"}
-
-
-
-
-
-
-
-

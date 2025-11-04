@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi import FastAPI, File, UploadFile
 from fastapi.security import OAuth2PasswordBearer
 
-from app.routers.user import login
 from ..model import Team, TeamMembers, User
 from datetime import date, timedelta
 # from app.routers import teams
@@ -36,11 +35,9 @@ async def get_team_id(id: int):
     if row is None:
         raise HTTPException(
             status_code=404, detail=f"Could not find team with id={id}")
-
+    
     team = Team(
-        id="id",
-        name="name",
-        created_at="created_at"
+        name="name"
     )
 
     return {
@@ -60,7 +57,7 @@ async def get_id(id: int):
 # e ve none memberId sepse mundet qe t jet optional
 
 
-async def get_teams(limit: int, offset: int, memberId: int = None) -> List:
+async def get_teams(limit: int, offset: int, memberId: int) -> List:
     query = "SELECT * FROM main.teams LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
@@ -71,40 +68,33 @@ async def get_teams(limit: int, offset: int, memberId: int = None) -> List:
         print(rows)
         print("-----------------------------------------------------")
         print("-----------------------------------------------------")
-        
-
-#  morri gjithe teams
-
         teams = []
         success = True
-        
+
         for record in rows:
 
             # gjith teams ku useri qe ka id = memberId esht member
             if (memberId):
-                #Ne castin qe eshte defined -> Merr nga team_members cdo team ku ky user-i eshte member
+                # Ne castin qe eshte defined -> Merr nga team_members cdo team ku ky user-i eshte member
                 members_query = "SELECT team_id, member_id FROM main.team_members WHERE team_id = $1 AND member_id = $2"
                 memberId_defined = await connection.fetch(members_query)
                 return memberId_defined
-             
 
             team = Team(
-                id=record["id"],
-                name=record["name"],
-                created_at=record["created_at"],
-                isMember=record(bool["memberId"])
-            )
+                name=record["name"]
+						)
+
 
             teams.append({
                 **team.model_dump(),
                 "id": record["id"],
-                "isMember": bool
+                # "isMember": bool
             })
         return teams
 
 
 @router.get("/?memberId")
-async def get_all_teams(limit: int = 10, offset: int = 0, memberId = bool):
+async def get_all_teams(limit: int = 10, offset: int = 0, memberId=bool):
     return await get_teams(limit, offset, memberId)
 # -----------------------------------------------------------
 # krijon nje team - merr id te team qe ke krijuar - insert nje new team member
@@ -205,6 +195,7 @@ async def leave_team(team_id: int, member_id: int):
 #             return {"error": "User is already a member of this team."}
 
 
+#---------------------------------------
 # do id e userit dhe id e team
 async def join_team(team_id: int, member_id: int):
     query = "SELECT * FROM main.users WHERE id = $1"
@@ -227,7 +218,14 @@ async def user_join_team(team_id: int, id: int):
     return await join_team(team_id, id)
 
 
-# ----------------------------------------------------------------
+# -------------------------------
+ 
+    
+	  
+
+
+
+#-----------------------------------
 
 async def update_team(id: int, team: Team):
     query = "UPDATE main.teams SET name = $2 , created_at= $3 WHERE id=$1"

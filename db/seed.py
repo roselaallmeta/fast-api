@@ -1,3 +1,4 @@
+
 import asyncpg
 import asyncio
 
@@ -91,7 +92,7 @@ createStatements = {
         CREATE TABLE IF NOT EXISTS main.users (
             id SERIAL PRIMARY KEY,
             name VARCHAR(255),
-            password VARCHAR(255) NOT NULL,
+            hashed_password TEXT NOT NULL,
             email VARCHAR(255) UNIQUE,
             role main.user_role NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),

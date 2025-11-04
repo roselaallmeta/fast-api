@@ -7,8 +7,13 @@ from ..src.commons.postgres import database
 from typing import List, Optional
 from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pwdlib import PasswordHash
 
 
+
+ph = PasswordHash.recommended()
 
 
 router = APIRouter(
@@ -16,9 +21,50 @@ router = APIRouter(
 
 # -----------------------------------------------------------------------------
 
+async def register_user(user: User):
+    errors = []
+    success = False
+    
+    hashed = ph.hash(user.hashed_password)
+
+    if user.name == None or user.name == '':
+        errors.append('User name not provided')
+
+    if user.role == None or user.role == '':
+        errors.append('User role not provided')
+
+    if user.email == None or user.email == '' or '@' not in user.email or '.' not in user.email:
+        errors.append('Email not provided or is invalid')
+		
+    if user.hashed_password == None or user.hashed_password == '':
+        errors.append('Password not provided')
+
+    if errors:
+        return {"errors": errors, "success": success}
+
+    query = "INSERT INTO main.users (name, role, email, hashed_password) VALUES ($1, $2, $3, $4) RETURNING id"
+    
+    async with database.pool.acquire() as connection:
+        user = await connection.execute(query, user.name, user.role, user.email, hashed)
+
+        success = True
+        return {"errors": errors, 
+                "success": success}
+
+    return user
+
+
+@router.post("/register")
+async def register(user: User):
+    return await register_user(user)
+
+
+
+#----------------------------------------------------------------------------
+
 
 async def get_all_users(limit: int, offset: int) -> List:
-    query = "SELECT id, name, email, role, password FROM main.users LIMIT $1 OFFSET $2"
+    query = "SELECT id, name, email, role, hashed_password FROM main.users LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
@@ -31,7 +77,7 @@ async def get_all_users(limit: int, offset: int) -> List:
                 name=record["name"],
                 email=record["email"],
                 role=record["role"],
-                password=record["password"]
+                hashed_password=record["hashed_password"]
             )
 
             users.append(user)
@@ -46,21 +92,19 @@ async def get(limit: int = 10, offset: int = 0):
 # -----------------------------------------------------------------------------
 
 
-async def create_user(user: User):
-    query = "INSERT INTO main.users (name, email, role, password) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at "
-
+async def create_user(user: UserLogin):
+    query = "INSERT INTO main.users (name, email, role, hashed_password) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at "
+  
     async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, user.name, user.email, user.role, user.password)
+        row = await connection.fetchrow(query, user.name, user.email, user.role, user.hashed_password)
+       
 
         return row
 
 
-@router.post("/")
-async def post(user: User):
-    return await create_user(user)
 
-# -----------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
 
 async def get_user_id(id: int):
     query = "SELECT * FROM main.users WHERE id = $1"
@@ -77,7 +121,7 @@ async def get_user_id(id: int):
         name=row["name"],
         role=row["role"],
         email=row["email"],
-        password=row["password"]
+        hashed_password=row["hashed_password"]
     )
 
     return {
@@ -91,6 +135,29 @@ async def get_id(id: int):
 
 # -----------------------------------------------------------------------------
 
+
+async def get_user_name(name: str):
+    query = "SELECT * FROM main.users WHERE name = $1"
+
+    async with database.pool.acquire() as connection:
+        row = await connection.fetchrow(query, name)
+
+    if row is None:
+        raise HTTPException(
+            status_code=404, detail=f"Could not find user")
+
+    user = UserLogin(
+        id=row["id"],
+        name=row["name"],
+        hashed_password=row["hashed_password"]
+    )
+    
+    return {
+        **user.model_dump()
+    }
+
+
+# --------------------------------------
 async def delete_user(id: int):
     query = "DELETE FROM main.users WHERE user_id = $1"
 
@@ -108,10 +175,10 @@ async def delete(id: int):
 
 
 async def update_user(user_id: int, user: User):
-    query = "UPDATE main.users SET name = $2, role = $3, email = $4, password = $5 WHERE user_id = $1"
+    query = "UPDATE main.users SET name = $2, role = $3, email = $4, hashed_password = $5 WHERE user_id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, user_id, user.name, user.role, user.email, user.password)
+        await connection.execute(query, user_id, user.name, user.role, user.email, user.hashed_password)
 
         return {
             "message": "User updated sucessfully",
@@ -125,86 +192,8 @@ async def put(user_id: int, user: User):
 
 # -----------------------------------------------------
 
-#bej return userId te personit qe ka ber login ose register
+# bej return userId te personit qe ka ber login ose register
 
-
-
-async def login(user: UserLogin):
-    errors = []
-    success = False
-
-    if user.email == '' or  user.password == '':
-        errors.append('Email or password not provided')
-        
-    query = "SELECT * FROM main.users WHERE email = $1 AND password = $2"
-    async with database.pool.acquire() as connection:
-        fetched_user = await connection.fetchrow(query , user.email, user.password)
-        
-        if fetched_user is None:
-            errors.append('User not found')
-        else:
-            success = True
-            return {
-                "errors": errors,
-                "success" : success,
-                "id" : fetched_user["id"],
-                "email" : fetched_user["email"]
-						}
-            
-         
-        if errors:
-            return {"errors": errors, "success": success}
-            
-        success = True
-        return {"errors": errors, "success": success}
-    
-
-@router.post("/login")
-async def user_login(user: UserLogin):
-    return await login(user)
-
-# --------------------------------------------------------------------
-
-async def register_user(user: User): 
-    errors = []
-    success = False
-    
-    if user.name == None or user.name == '':
-        errors.append('User name not provided')
-    
-    if user.role == None or user.role == '':
-        errors.append('User role not provided')
-
-    if user.email == None or user.email == '' or '@' not in user.email or '.' not in user.email:
-        errors.append('Email not provided or is invalid')
-
-    if user.password == None or user.password == '':
-        errors.append('Password not provided')
-       
-    if errors:
-        return {"errors": errors, "success": success}
-        
-            
-    query = "INSERT INTO main.users (name, role, email, password) VALUES ($1, $2, $3, $4) RETURNING id"
-    async with database.pool.acquire() as connection:
-        user = await connection.execute(query, user.name, user.role, user.email, user.password)
-
-        success = True
-        return {"errors": errors, "success": success, "user_id": user.id }
-
-    return user
-
-
-@router.post("/register")
-async def register(user: User):
-    return await register_user(user)
-  
-# -----------------------------------------------------------------------------------
-
-
-
-
-# ------------------------------------------------------------------------------------------------
 
 
 # --------------------------------------------------------------------------------
