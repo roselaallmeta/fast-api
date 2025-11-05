@@ -33,12 +33,12 @@ async def get_user_email(email: str) -> UserLogin | None:
     if row is None:
         raise HTTPException(
             status_code=404, detail=f"Could not find user")
-
-    else:
+    
+    if row:
         user = UserLogin(
             id=row["id"],
             email=row["email"],
-            hashed_password=row["hashed_password"]
+            password=row["password"]
         )
 
     return UserLogin(**user.model_dump())
@@ -76,8 +76,9 @@ async def authenticate_user(username: str, password: str) -> UserLogin:
     if not user:
         return False
 
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, hashed) :
         return False
+    
     return user
 
 
@@ -139,3 +140,5 @@ async def login_for_access_token(
 
 
 # a json web token always has 3 parts-> HEADER. PAYLOAD. SIGNATURE
+
+

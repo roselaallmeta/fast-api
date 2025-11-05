@@ -10,10 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pwdlib import PasswordHash
+import re
 
 
+# TODO : BEJE ME TE FORT USER AUTHENTICATION PER REGISTERING -- THUAJ QE PASSWORD SHOULD CONTAIN X AND BE X LONG --- IMPLEMENTOJE NE FRONT DHE BEJE VISUAL
 
 ph = PasswordHash.recommended()
+reg = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$#%])[A-Za-z\d@$#%]{6,20}$"
+pat = re.compile(reg)
+
 
 
 router = APIRouter(
@@ -21,38 +26,54 @@ router = APIRouter(
 
 # -----------------------------------------------------------------------------
 
+ph = PasswordHash.recommended()
+password_pattern = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$#%])[A-Za-z\d@$#%]{6,20}$")
+
+router = APIRouter(
+    prefix="/users",
+    responses={404: {"description": "Not found"}},
+)
+
 async def register_user(user: User):
     errors = []
-    success = False
-    
-    hashed = ph.hash(user.hashed_password)
 
-    if user.name == None or user.name == '':
-        errors.append('User name not provided')
-
-    if user.role == None or user.role == '':
-        errors.append('User role not provided')
-
-    if user.email == None or user.email == '' or '@' not in user.email or '.' not in user.email:
-        errors.append('Email not provided or is invalid')
-		
-    if user.hashed_password == None or user.hashed_password == '':
-        errors.append('Password not provided')
+    if not user.name:
+        errors.append("User name not provided")
+    if not user.role:
+        errors.append("User role not provided")
+    if not user.email or '@' not in user.email or '.' not in user.email:
+        errors.append("Email not provided or is invalid")
+    if not user.password:
+        errors.append("Password not provided")
+    else:
+        if not password_pattern.fullmatch(user.password):
+            errors.append("Password does not meet complexity requirements")
 
     if errors:
-        return {"errors": errors, "success": success}
+        return {"success": False, "errors": errors}
 
-    query = "INSERT INTO main.users (name, role, email, hashed_password) VALUES ($1, $2, $3, $4) RETURNING id"
+
+    hashed = ph.hash(user.password)
+
     
+    query = """
+        INSERT INTO main.users (name, role, email, password)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+    """
     async with database.pool.acquire() as connection:
-        user = await connection.execute(query, user.name, user.role, user.email, hashed)
+        row = await connection.fetchrow(
+            query,
+            user.name,
+            user.role,
+            user.email,
+            hashed,          
+        )
 
-        success = True
-        return {"errors": errors, 
-                "success": success}
-
-    return user
-
+    return {
+        "success": True,
+        "id": row["id"],
+    }
 
 @router.post("/register")
 async def register(user: User):
@@ -60,11 +81,11 @@ async def register(user: User):
 
 
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 
 async def get_all_users(limit: int, offset: int) -> List:
-    query = "SELECT id, name, email, role, hashed_password FROM main.users LIMIT $1 OFFSET $2"
+    query = "SELECT id, name, email, role, password FROM main.users LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
@@ -77,7 +98,7 @@ async def get_all_users(limit: int, offset: int) -> List:
                 name=record["name"],
                 email=record["email"],
                 role=record["role"],
-                hashed_password=record["hashed_password"]
+                password=record["hashed"]
             )
 
             users.append(user)
@@ -93,18 +114,15 @@ async def get(limit: int = 10, offset: int = 0):
 
 
 async def create_user(user: UserLogin):
-    query = "INSERT INTO main.users (name, email, role, hashed_password) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at "
-  
+    query = "INSERT INTO main.users (name, email, role, password) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at "
+
     async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, user.name, user.email, user.role, user.hashed_password)
-       
+        row = await connection.fetchrow(query, user.name, user.email, user.role, user.password)
 
         return row
 
 
-
-
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 async def get_user_id(id: int):
     query = "SELECT * FROM main.users WHERE id = $1"
@@ -121,7 +139,7 @@ async def get_user_id(id: int):
         name=row["name"],
         role=row["role"],
         email=row["email"],
-        hashed_password=row["hashed_password"]
+        password=row["hashed"]
     )
 
     return {
@@ -149,9 +167,9 @@ async def get_user_name(name: str):
     user = UserLogin(
         id=row["id"],
         name=row["name"],
-        hashed_password=row["hashed_password"]
+        password=row["hashed"]
     )
-    
+
     return {
         **user.model_dump()
     }
@@ -175,10 +193,10 @@ async def delete(id: int):
 
 
 async def update_user(user_id: int, user: User):
-    query = "UPDATE main.users SET name = $2, role = $3, email = $4, hashed_password = $5 WHERE user_id = $1"
+    query = "UPDATE main.users SET name = $2, role = $3, email = $4, password = $5 WHERE user_id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, user_id, user.name, user.role, user.email, user.hashed_password)
+        await connection.execute(query, user_id, user.name, user.role, user.email, user.password)
 
         return {
             "message": "User updated sucessfully",
@@ -193,7 +211,6 @@ async def put(user_id: int, user: User):
 # -----------------------------------------------------
 
 # bej return userId te personit qe ka ber login ose register
-
 
 
 # --------------------------------------------------------------------------------

@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel, FilePath, HttpUrl, field_validator
 from datetime import datetime
 
+
 class StatusEnum(str, Enum):
     pending = "pending"
     approved = "approved"
@@ -85,7 +86,7 @@ class User(BaseModel):
     name: str
     role: UserRoleEnum
     email: str
-    hashed_password: str
+    password: str
     created_at: Optional[datetime] = None
 
 
@@ -99,14 +100,13 @@ class UserProfile(BaseModel):
     status: ProfileStatusEnum
     industry: IndustryEnum
     description: str
-    
 
-		
+
 class UserLogin(BaseModel):
     id: Optional[int] = None
     email: str
-    hashed_password: str
-    
+    password: str
+
 
 class Venture(BaseModel):
     name: str
@@ -121,12 +121,13 @@ class Venture(BaseModel):
     total_funding: decimal.Decimal
     valuation: decimal.Decimal
     status: VentureStatusEnum
-    
+
 
 class Token(BaseModel):
-    access_token : str
+    access_token: str
     token_type: str
-    
+
+
 class TokenData(BaseModel):
     username: Optional[str] = None
 

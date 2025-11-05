@@ -14,17 +14,14 @@ SECRET_KEY = 'cfedced7646354567b2836005fab76ab9748284e18e8a0c06344883c58314bc783
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-
 ph = PasswordHash.recommended()
 
 
-def verify_password(password, hashed_password):
-    return ph.verify(password, hashed_password)
 
 def get_password_hash(password):
-    return ph.hash(password)
+    return ph.hash(password) 
 
-    
-        
-    
-    
+
+def verify_password(password, hashed):
+    hashed = ph.hash(password)
+    return ph.verify(password, hashed)
