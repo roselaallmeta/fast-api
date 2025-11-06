@@ -122,7 +122,7 @@ async def create_user(user: UserLogin):
         return row
 
 
-# ------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
 async def get_user_id(id: int):
     query = "SELECT * FROM main.users WHERE id = $1"

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, FastAPI
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pwdlib import PasswordHash
 from ..model import User, UserProfile, Token, TokenData, UserLogin
-from ..routers.user import get_user_id, get_user_name,create_user
+from ..routers.user import get_user_id, get_user_name
 from .auth import verify_password, get_password_hash, ph
 from ..src.commons.postgres import database
  
@@ -20,9 +20,9 @@ ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-@router.post("/")
-async def post(user: User):
-    return await create_user(user)
+# @router.post("/")
+# async def post(user: User):
+#     return await create_user(user)
 
 
 async def get_user_email(email: str) -> UserLogin | None:
@@ -76,7 +76,7 @@ async def authenticate_user(username: str, password: str) -> UserLogin:
     if not user:
         return False
 
-    if not verify_password(password, hashed) :
+    if not verify_password(password, user.password):
         return False
     
     return user
@@ -133,12 +133,11 @@ async def login_for_access_token(
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = await create_access_token(
         data={"sub": user.email}, 
-        expire=access_token_expires
+        expire=access_token_expires,
     )
         
-    return Token(access_token=access_token, token_type="bearer")
+        
+    return Token(access_token=access_token, token_type="bearer", id=user.id)
 
-
-# a json web token always has 3 parts-> HEADER. PAYLOAD. SIGNATURE
 
 
