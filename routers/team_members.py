@@ -81,7 +81,6 @@ async def delete(team_id: int, member_id: int):
 
 #-------------------------------------
 
-# function qe e fshin nje member nga nje team
 
 async def leave_team(team_id: int, member_id: int):
     query = "DELETE FROM main.team_members WHERE team_id = $1 AND member_id = $2"
@@ -120,6 +119,3 @@ async def delete(team_id: int, member_id: int):
 
 
 
-
-
-#2- function that checks nese nje member belongs to a specific team

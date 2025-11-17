@@ -20,9 +20,6 @@ ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-# @router.post("/")
-# async def post(user: User):
-#     return await create_user(user)
 
 
 async def get_user_email(email: str) -> UserLogin | None:
@@ -44,12 +41,6 @@ async def get_user_email(email: str) -> UserLogin | None:
     return UserLogin(**user.model_dump())
 
 
-# per te krijuar nje token- kemi header, payload dhe signature
-# token is issued pasi ben log in sucessfully
-
-# header = algorithm and type
-# payload = data
-# signature = secret key
 
 async def create_access_token(data: dict, expire: timedelta | None = None) -> str:
     to_encode = data.copy()
@@ -112,15 +103,13 @@ async def get_current_active_user(
     return current_user
 
 
-# nuk e definon si duhet te jet data te create_asccess_token, por e ben tek login_for_access_token
-
 
 @router.post("/token/login")
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Token:
     user = await authenticate_user(
-        form_data.username, form_data.password)  # e definon sic e do forma
+        form_data.username, form_data.password) 
     
     if not user:
          raise HTTPException(

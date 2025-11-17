@@ -55,37 +55,6 @@ async def get_ventures(limit: int, offset: int):
 # -----------------------------------------------------------------------------
 
 
-# async def add_member(id: int, member: Venture):
-#     query = "INSERT INTO main.ventures(name, phone_number, email, description, industries, funding_stage, website_url , funding_goal, total_funding, valuation, is_active) VALUES ($1, $2, $3, $4, $5, $6 ,$7 ,$8 ,$9 ,$10, $11) RETURNING *"
-
-#     async with database.pool.acquire() as connection:
-#         await connection.fetchrow(query,
-#                                   member.name,
-#                                   member.phone_number,
-#                                   member.email,
-#                                   member.description,
-#                                   member.industries,
-#                                   member.funding_stage,
-#                                   member.website_url,
-#                                   member.funding_goal,
-#                                   member.total_funding,
-#                                   member.valuation,
-#                                   member.is_active)
-
-#         return {**member.model_dump()}
-
-
-# @router.post("/{id}/members")
-# async def post(venture: Venture):
-#     return await create_venture(venture)
-
-
-# -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
-
-
 async def create_venture(venture: Venture):
     query = "INSERT INTO main.ventures(name, created_at ,phone_number, email, description, industries, funding_stage, website_url , funding_goal, total_funding, valuation, status) VALUES ($1, $2, $3, $4, $5, $6 ,$7 ,$8 ,$9 ,$10, $11, $12) RETURNING *"
 

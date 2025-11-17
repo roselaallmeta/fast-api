@@ -140,13 +140,7 @@ async def update(id: int, investment: Investment):
     return await update_investment(id, investment)
 
 # --------------------
-# investments/{user_id}
 
-
-# mori te gjitha investimet dhe id e userit qe ka investuar aty
-# krijoi nje array bosh me te gjitha investimet qe do ket ber useri -> do behen append aty
-
-# duhet te kontrolloj nese user_id ne investment esht e njejt me id e userit
 
 async def user_investments(id: int,user_id: int) -> List:
     query = "SELECT * FROM main.investments WHERE id =$1 AND user_id = $2 "
@@ -176,7 +170,7 @@ async def user_investments(id: int,user_id: int) -> List:
 
         return investments
 
-# investments / id e investimit /user-investment/  user_id
+
 @router.get("/{id}/user-investment/{user_id}")
 async def get_all_user_investments(id: int, user_id: int):
     return await user_investments(id, user_id)

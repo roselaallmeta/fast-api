@@ -157,7 +157,7 @@ class Investment(BaseModel):
     description: str
 
 
-class PitchDecks(BaseModel):  # inseroje ne db
+class PitchDecks(BaseModel): 
     venture_id: int
     title: str
     file_url: str

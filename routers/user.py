@@ -13,12 +13,9 @@ from pwdlib import PasswordHash
 import re
 
 
-# TODO : BEJE ME TE FORT USER AUTHENTICATION PER REGISTERING -- THUAJ QE PASSWORD SHOULD CONTAIN X AND BE X LONG --- IMPLEMENTOJE NE FRONT DHE BEJE VISUAL
-
 ph = PasswordHash.recommended()
 reg = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$#%])[A-Za-z\d@$#%]{6,20}$"
 pat = re.compile(reg)
-
 
 
 router = APIRouter(
@@ -33,6 +30,7 @@ router = APIRouter(
     prefix="/users",
     responses={404: {"description": "Not found"}},
 )
+
 
 async def register_user(user: User):
     errors = []
@@ -80,8 +78,6 @@ async def register(user: User):
     return await register_user(user)
 
 
-
-# ----------------------------------------------------------------------------
 
 
 async def get_all_users(limit: int, offset: int) -> List:
@@ -210,17 +206,3 @@ async def put(user_id: int, user: User):
 
 # -----------------------------------------------------
 
-# bej return userId te personit qe ka ber login ose register
-
-
-# --------------------------------------------------------------------------------
-
-# async def forgot_password(user: User, password: str):
-# 	query = "SELECT * FROM main.users WHERE password = $2"
-
-
-# 	if password != user.password:
-# 		return "Forgot password?"
-
-
-# ------------------------------------------------

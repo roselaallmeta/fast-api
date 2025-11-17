@@ -103,7 +103,7 @@ createStatements = {
     
 		
 
-    # KA ONE TO ONE RELATIONSHIP ME USERS , NJE USER KA NJE PROFILE, DHE NJE PROFILE BELONGS TO ONE USER
+ 
     "user_profiles": """
         CREATE TABLE IF NOT EXISTS main.user_profiles (
         		id SERIAL PRIMARY KEY,
@@ -121,7 +121,7 @@ createStatements = {
     """,
 
 
-                # SHTO NJE BUTON QE TE BEJ INVEST
+
 
     "ventures": """
         CREATE TABLE IF NOT EXISTS main.ventures (
@@ -149,9 +149,6 @@ createStatements = {
         );
     """,
 
-    # which team works on which venture
-
-    # many to many relationship
 
     "venture_teams": """
         CREATE TABLE IF NOT EXISTS main.venture_teams (
@@ -163,7 +160,7 @@ createStatements = {
         );
     """,
 
-    # nje venture has multiple members , a member can be apart of multiple ventures
+
 
 
                 "venture_members": """
@@ -204,41 +201,6 @@ createStatements = {
     """
 
 
-
-
-
-
-    # "document": """
-    #     CREATE TABLE IF NOT EXISTS main.document (
-    #         id SERIAL PRIMARY KEY,
-    #         user_id INT NOT NULL REFERENCES main.users(id) ON DELETE CASCADE,
-    #         title VARCHAR(255),
-    #         add_document VARCHAR(255),
-    #         issue_date TIMESTAMP DEFAULT NOW(),
-    #         expiry_date TIMESTAMP DEFAULT NOW(),
-    #         content_type TEXT NOT NULL,
-    #         uploaded_by TEXT NOT NULL,
-    #         description TEXT,
-    #         uploaded_at TIMESTAMP DEFAULT NOW(),
-    #         status main.status NOT NULL
-    #     );
-    # """,
-
-
-    # "banking_details": """
-    #     CREATE TABLE IF NOT EXISTS main.banking_details (
-    #         id SERIAL PRIMARY KEY,
-    #         user_id INT NOT NULL REFERENCES main.users(id),
-    #         account_number TEXT UNIQUE NOT NULL,
-    #         IBAN TEXT UNIQUE,
-    #         BIC TEXT UNIQUE,
-    #         bank_name TEXT NOT NULL,
-    #         bank_country TEXT NOT NULL,
-    #         currency main.currency NOT NULL,
-    #         balance NUMERIC(18,2),
-    #         is_bank_verified BOOLEAN
-    #     );
-    # """
 }
 
 type_keys = [
@@ -264,11 +226,7 @@ table_keys = [
     "team_members"
 ]
 
-# "venture_members",
-#     "pitch_decks",
-#     "investments",
-#     "document",
-#     "banking_details"
+
 
 
 async def main():

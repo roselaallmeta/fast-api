@@ -15,15 +15,7 @@ router = APIRouter(
 
 
 
-# "venture_teams": """
-#         CREATE TABLE IF NOT EXISTS main.venture_teams (
-#             venture_id INT NOT NULL REFERENCES main.ventures(id) ON DELETE CASCADE,
-#             team_id INT NOT NULL REFERENCES main.teams(id) ON DELETE CASCADE,
-#             created_at TIMESTAMP DEFAULT NOW(),
-#             PRIMARY KEY (venture_id, team_id)
-#         );
-#     """,
-# -----------------------------------------
+
 
 async def get_all_ventureTeams(limit: int, offset: int) -> List:
 	query = "SELECT * FROM main.venture_teams LIMIT $1 OFFSET $2"
