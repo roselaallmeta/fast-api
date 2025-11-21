@@ -72,6 +72,7 @@ class GenderEnum(str, Enum):
     other = "other"
 
 
+
 class UserRoleEnum(str, Enum):
     founder = "founder"
     investor = "investor"
@@ -106,6 +107,7 @@ class UserLogin(BaseModel):
     id: Optional[int] = None
     email: str
     password: str
+    role: UserRoleEnum
 
 
 class Venture(BaseModel):
@@ -125,6 +127,7 @@ class Venture(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
     id: int
 

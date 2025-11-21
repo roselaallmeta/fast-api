@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from .src.commons.postgres import database
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from .security import auth
+
 
 
 from .routers import (
@@ -24,7 +26,7 @@ from .security import (
     jwt_tokens
 )
 
-
+ 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,6 +40,8 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+
 
 app.add_middleware(
     CORSMiddleware,

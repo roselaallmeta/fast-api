@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from enum import Enum
 from multiprocessing import connection
 from multiprocessing.managers import BaseManager
-from ..model import GenderEnum, User, UserLogin, UserRoleEnum
+from ..model import GenderEnum, User, UserLogin, UserProfile, UserRoleEnum
 from ..src.commons.postgres import database
 from typing import List, Optional
 from typing import Annotated
@@ -10,7 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pwdlib import PasswordHash
+from ..security.permissions import RoleChecker, admin_required, investor_required, business_required, guest_required, founder_required, institution_required
 import re
+
 
 
 ph = PasswordHash.recommended()
@@ -21,6 +23,7 @@ pat = re.compile(reg)
 router = APIRouter(
     prefix="/users", responses={404: {"description": "Not found"}})
 
+
 # -----------------------------------------------------------------------------
 
 ph = PasswordHash.recommended()
@@ -30,6 +33,8 @@ router = APIRouter(
     prefix="/users",
     responses={404: {"description": "Not found"}},
 )
+
+#----------------------------------------------
 
 
 async def register_user(user: User):
@@ -73,14 +78,15 @@ async def register_user(user: User):
         "id": row["id"],
     }
 
+
 @router.post("/register")
 async def register(user: User):
     return await register_user(user)
 
 
+#------------------------------------------
 
-
-async def get_all_users(limit: int, offset: int) -> List:
+async def get_all_users(limit: int, offset: int, _:Annotated[bool, Depends(RoleChecker(allowed_roles="admin"))]) -> List:
     query = "SELECT id, name, email, role, password FROM main.users LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
@@ -94,31 +100,20 @@ async def get_all_users(limit: int, offset: int) -> List:
                 name=record["name"],
                 email=record["email"],
                 role=record["role"],
-                password=record["hashed"]
+                password=record["password"]
             )
 
             users.append(user)
 
         return users
+    return required_role
 
 
 @router.get("/")
-async def get(limit: int = 10, offset: int = 0):
-    return await get_all_users(limit, offset)
+async def get(limit: int = 10, offset: int = 0, required_role=Depends(admin_required)):
+    return await get_all_users(limit, offset, required_role)
 
-# -----------------------------------------------------------------------------
-
-
-async def create_user(user: UserLogin):
-    query = "INSERT INTO main.users (name, email, role, password) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at "
-
-    async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, user.name, user.email, user.role, user.password)
-
-        return row
-
-
-#------------------------------------------------------------------------------
+#---------------------------------------------
 
 async def get_user_id(id: int):
     query = "SELECT * FROM main.users WHERE id = $1"
@@ -147,7 +142,7 @@ async def get_user_id(id: int):
 async def get_id(id: int):
     return await get_user_id(id)
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------
 
 
 async def get_user_name(name: str):
