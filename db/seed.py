@@ -26,6 +26,7 @@ dropStatements = [
     "DROP TABLE IF EXISTS main.document CASCADE;",
     "DROP TABLE IF EXISTS main.banking_details CASCADE;",
     "DROP TABLE IF EXISTS main.pitch_decks CASCADE;"
+    "DROP TABLE IF EXISTS main.user_login CASCADE;"
 
     # "SELECT * FROM main.users INNER JOIN main.user_profiles ON main.users.user_id = main.user_profiles.user_id;"
 ]
@@ -86,8 +87,6 @@ createStatements = {
         CREATE TYPE main.user_role AS ENUM('founder', 'investor', 'guest', 'institution', 'admin', 'business');
     """,
 
-
-
     "users": """
         CREATE TABLE IF NOT EXISTS main.users (
             id SERIAL PRIMARY KEY,
@@ -101,14 +100,11 @@ createStatements = {
         );
     """,
     
-		
-
- 
     "user_profiles": """
         CREATE TABLE IF NOT EXISTS main.user_profiles (
         		id SERIAL PRIMARY KEY,
             user_id INT UNIQUE, 
-            FOREIGN KEY (user_id) REFERENCES main.users(id),
+            FOREIGN KEY (user_id) REFERENCES main.users(id) ON DELETE CASCADE,
             gender main.gender NOT NULL, 
             phone_number VARCHAR(20) NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
@@ -119,9 +115,18 @@ createStatements = {
             status main.user_status NOT NULL
         );
     """,
+    
 
-
-
+		"user_login": """
+        CREATE TABLE IF NOT EXISTS main.user_login (
+        		id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE,
+            name VARCHAR(255),
+            password TEXT NOT NULL,
+            role main.user_role NOT NULL
+        );
+    """,
+    
 
     "ventures": """
         CREATE TABLE IF NOT EXISTS main.ventures (
@@ -219,6 +224,7 @@ type_keys = [
 table_keys = [
     "users",
     "user_profiles",
+    "user_login",
     "ventures",
     "teams",
     "venture_teams",

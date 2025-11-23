@@ -18,15 +18,14 @@ ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 ph = PasswordHash.recommended()
+# hashed = ph.hash(user.password)
 
+def verify_password(password, hashed):
+    return ph.verify(password, hashed)
 
 def get_password_hash(password):
     return ph.hash(password) 
 
-
-def verify_password(password, hashed):
-    hashed = ph.hash(password)
-    return ph.verify(password, hashed)
 
 
 @asynccontextmanager

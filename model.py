@@ -101,6 +101,7 @@ class UserProfile(BaseModel):
     status: ProfileStatusEnum
     industry: IndustryEnum
     description: str
+   
 
 
 class UserLogin(BaseModel):
@@ -128,8 +129,8 @@ class Venture(BaseModel):
 class Token(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str
-    id: int
+    token_type: str = "bearer"
+    id: int | None = None
 
 
 class TokenData(BaseModel):

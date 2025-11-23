@@ -1,5 +1,5 @@
 from .jwt_tokens import *
-from ..model import UserRoleEnum
+from ..model import UserRoleEnum, UserProfile
 
 
 class RoleChecker:

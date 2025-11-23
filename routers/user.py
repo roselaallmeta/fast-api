@@ -84,9 +84,11 @@ async def register(user: User):
     return await register_user(user)
 
 
+
+
 #------------------------------------------
 
-async def get_all_users(limit: int, offset: int, _:Annotated[bool, Depends(RoleChecker(allowed_roles="admin"))]) -> List:
+async def get_all_users(limit: int, offset: int, required_role:Annotated[bool, Depends(RoleChecker([UserRoleEnum.admin]))]) -> List:
     query = "SELECT id, name, email, role, password FROM main.users LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
@@ -106,8 +108,7 @@ async def get_all_users(limit: int, offset: int, _:Annotated[bool, Depends(RoleC
             users.append(user)
 
         return users
-    return required_role
-
+    
 
 @router.get("/")
 async def get(limit: int = 10, offset: int = 0, required_role=Depends(admin_required)):
