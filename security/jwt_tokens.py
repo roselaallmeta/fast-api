@@ -21,10 +21,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_MINUTES = 120
 
 
-# na duhet ta marrim si fillim my email sepse para se te bej log in nuk njihet nga id
+# na duhet ta marrim si fillim by email sepse para se te bej log in nuk njihet nga id
 
 
-async def get_user_email(email: str) -> UserLogin | None:
+async def get_user_email(email: str) -> UserLogin:
     query = "SELECT * FROM main.user_login WHERE email = $1 "
 
     async with database.pool.acquire() as connection:
@@ -36,41 +36,35 @@ async def get_user_email(email: str) -> UserLogin | None:
 
     return UserLogin(
         id=row["id"],
-        email=row["email"],
+		    email=row["email"],
         name=row["name"],
-        password=row["password"],  
+        password=row["password"],
         role=row["role"]
-    )
+		)
     
-   
 
 @router.get("/get-user-email/{email}", response_model=UserLogin)
 async def get_email(email: str):
     return await get_user_email(email)
 
-
 #---------------------------------------------
-async def get_user_id(user_id: int):
-    query = "SELECT * FROM main.user_profiles WHERE user_id = $1 "
+async def get_user_id(id: int):
+    query = "SELECT * FROM main.users WHERE id = $1 "
 
     async with database.pool.acquire() as connection:
-        row = await connection.fetchrow(query, user_id)
+        row = await connection.fetchrow(query, id)
 
     if row is None:
         raise HTTPException(
-            status_code=404, detail=f"Could not find user with id={user_id}")
+            status_code=404, detail=f"Could not find user with id={user.id}")
 
-    user = UserProfile(
+    user = User(
         id=row["id"],
-        user_id=row["user_id"],
-        gender=row["gender"],
-        phone_number=row["phone_number"],
-        created_at=row["id"],
-        updated_at=row["updated_at"],
-        is_active=row["is_active"],
-        industry=row["industry"],
-        description=row["description"],
-        status=row["status"]
+        name=row["name"],
+        role=row["role"],
+        email=row["email"],
+        hashed=row["hashed"],
+        created_at=row["created_at"],
     )
 
     return {
@@ -78,9 +72,9 @@ async def get_user_id(user_id: int):
     }
 
 
-@router.get("/get-user-id/{user_id}", response_model=UserLogin)
-async def get_id(user_id: int):
-    return await get_user_id(user_id)
+@router.get("/get-user-profile/{id}", response_model=User)
+async def get_id(id: int):
+    return await get_user_id(id)
 
 #-------------------------------------------------------------
 
@@ -103,19 +97,30 @@ async def create_token(data: dict, expires_delta: timedelta | None = None):
 
 #---------------------------------------
 
-async def authenticate_user(email: str, password: str) -> UserLogin:
+async def authenticate_user(email: str, password: str):
     user = await get_user_email(email)
 
-    if not user:
+    query = "SELECT * FROM main.user_login WHERE email = $1 AND password = $2"
+    async with database.pool.acquire() as connection:
+        row = await connection.execute(query, email , password)
+
+        if row is None:
+            return False
+        
+    password_query = "SELECT ul.password , u.hashed FROM main.user_login ul INNER JOIN main.users u ON ul.id = u.id"
+    async with database.pool.acquire() as connection:
+        password_row = await connection.execute(password_query)
+        
+        if password_row is None:
+            return False
+             
+    if not user: 
+        return False
+    
+    if not verify_password(password_row.password, user.hashed):
         return False
 
-    hashed = ph.hash(password)
-    if not verify_password(password, hashed):
-        return False
-
-    return {
-        **user.model_dump()
-		}
+    return user
 
 
 #-------------------------------------------------
@@ -137,7 +142,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     except JWTError:
         raise credentials_exception
 
-    user = await get_user_id(id=id)
+    user = await get_user_email(email = email)
     if user is None:
         raise credentials_exception
     return user
@@ -174,7 +179,7 @@ async def validate_refresh_token(token: Annotated[str, Depends(oauth2_scheme)]):
     except(JWTError, ValidationError):
         raise credentials_exception
     
-    user = await get_user_id(id=id)
+    user = await get_user_email(email=email)
     
     if user is None:
         raise credentials_exception
@@ -190,7 +195,8 @@ async def login_for_access_token(
 ) -> Token:
 
     user = await authenticate_user(
-        form_data.username, form_data.password)
+        form_data.username, form_data.password
+	)
 
     if not user:
         raise HTTPException(
@@ -206,7 +212,6 @@ async def login_for_access_token(
     access_token=await create_token(data={"sub": user["email"], "role": user["role"]}, 
 		expires_delta = access_token_expires)
 
-    
     refresh_token=await create_token(data={"sub":user["email"], "role": user["role"]}, expires_delta= refresh_token_expires)
     refresh_tokens.append(refresh_token)
    
@@ -220,7 +225,6 @@ async def refresh_token_function(
 ):
     user, token = token_data
     
-
     access_token_expires=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     refresh_token_expires=timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     

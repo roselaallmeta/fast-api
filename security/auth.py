@@ -12,20 +12,27 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
 
-
 SECRET_KEY = 'cfedced7646354567b2836005fab76ab9748284e18e8a0c06344883c58314bc7838e0'
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 ph = PasswordHash.recommended()
-# hashed = ph.hash(user.password)
 
-def verify_password(password, hashed):
-    return ph.verify(password, hashed)
 
 def get_password_hash(password):
-    return ph.hash(password) 
+    hashed = ph.hash(password)
+    hashed = hashed.strip().strip('"').strip("'")
+    print(f"Hashed password: {hashed}")
+    return hashed
 
+
+def verify_password(password, hashed):
+    if password==hashed:
+        return ph.verify(password, hashed)
+    else:
+        print("Could not verify password")
+        return False
+   
 
 
 @asynccontextmanager

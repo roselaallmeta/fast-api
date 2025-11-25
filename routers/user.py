@@ -12,6 +12,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pwdlib import PasswordHash
 from ..security.permissions import RoleChecker, admin_required, investor_required, business_required, guest_required, founder_required, institution_required
 import re
+from ..security.auth import verify_password, get_password_hash
+
 
 
 
@@ -35,32 +37,32 @@ router = APIRouter(
 )
 
 #----------------------------------------------
-
-
 async def register_user(user: User):
     errors = []
 
     if not user.name:
-        errors.append("User name not provided")
+        errors.append("Name not provided")
     if not user.role:
         errors.append("User role not provided")
     if not user.email or '@' not in user.email or '.' not in user.email:
         errors.append("Email not provided or is invalid")
-    if not user.password:
+    if not user.hashed:
         errors.append("Password not provided")
-    else:
-        if not password_pattern.fullmatch(user.password):
+
+    if user.hashed:
+        if not password_pattern.fullmatch(user.hashed):
             errors.append("Password does not meet complexity requirements")
 
+        hashed = get_password_hash(user.hashed)
+        user.hashed = hashed
+        
+	
     if errors:
         return {"success": False, "errors": errors}
 
 
-    hashed = ph.hash(user.password)
-
-    
     query = """
-        INSERT INTO main.users (name, role, email, password)
+        INSERT INTO main.users (name, role, email, hashed)
         VALUES ($1, $2, $3, $4)
         RETURNING id
     """
@@ -70,13 +72,9 @@ async def register_user(user: User):
             user.name,
             user.role,
             user.email,
-            hashed,          
+            user.hashed        
         )
-
-    return {
-        "success": True,
-        "id": row["id"],
-    }
+        return row
 
 
 @router.post("/register")
@@ -84,12 +82,10 @@ async def register(user: User):
     return await register_user(user)
 
 
-
-
 #------------------------------------------
 
 async def get_all_users(limit: int, offset: int, required_role:Annotated[bool, Depends(RoleChecker([UserRoleEnum.admin]))]) -> List:
-    query = "SELECT id, name, email, role, password FROM main.users LIMIT $1 OFFSET $2"
+    query = "SELECT id, name, email, role, hashed FROM main.users LIMIT $1 OFFSET $2"
 
     async with database.pool.acquire() as connection:
         rows = await connection.fetch(query, limit, offset)
@@ -102,7 +98,7 @@ async def get_all_users(limit: int, offset: int, required_role:Annotated[bool, D
                 name=record["name"],
                 email=record["email"],
                 role=record["role"],
-                password=record["password"]
+                hashed=record["hashed"]
             )
 
             users.append(user)
@@ -131,7 +127,7 @@ async def get_user_id(id: int):
         name=row["name"],
         role=row["role"],
         email=row["email"],
-        password=row["hashed"]
+        hashed=row["hashed"]
     )
 
     return {
@@ -159,7 +155,7 @@ async def get_user_name(name: str):
     user = UserLogin(
         id=row["id"],
         name=row["name"],
-        password=row["hashed"]
+        hashed=row["hashed"]
     )
 
     return {
@@ -185,10 +181,10 @@ async def delete(id: int):
 
 
 async def update_user(user_id: int, user: User):
-    query = "UPDATE main.users SET name = $2, role = $3, email = $4, password = $5 WHERE user_id = $1"
+    query = "UPDATE main.users SET name = $2, role = $3, email = $4, hashed = $5 WHERE user_id = $1"
 
     async with database.pool.acquire() as connection:
-        await connection.execute(query, user_id, user.name, user.role, user.email, user.password)
+        await connection.execute(query, user_id, user.name, user.role, user.email, user.hashed)
 
         return {
             "message": "User updated sucessfully",

@@ -4,7 +4,7 @@ from .src.commons.postgres import database
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from .security import auth
+# from .security import auth
 
 
 

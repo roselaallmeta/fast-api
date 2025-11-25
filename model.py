@@ -7,30 +7,25 @@ from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel, FilePath, HttpUrl, field_validator
 from datetime import datetime
 
-
 class StatusEnum(str, Enum):
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
-
 
 class ProfileStatusEnum(str, Enum):
     active = "active"
     inactive = "inactive"
     deactivated = "deactivated"
 
-
 class VentureStatusEnum(str, Enum):
     active = "active"
     archived = "archived"
     banned = "banned"
 
-
 class InvestmentTypeEnum(str, Enum):
     equity = "equity"
     loan = "loan"
     grant = "grant"
-
 
 class IndustryEnum(str, Enum):
     technology = "technology"
@@ -43,7 +38,6 @@ class IndustryEnum(str, Enum):
     retail = "retail"
     other = "other"
     media = "media"
-
 
 class FundingStageEnum(str, Enum):
     pre_seed = "pre_seed"
@@ -59,18 +53,15 @@ class FundingStageEnum(str, Enum):
     ipo = "ipo"
     acquired = "acquired"
 
-
 class CurrencyEnum(str, Enum):
     USD = "USD"
     EUR = "EUR"
     ALL = "ALL"
 
-
 class GenderEnum(str, Enum):
     male = "male"
     female = "female"
     other = "other"
-
 
 
 class UserRoleEnum(str, Enum):
@@ -85,28 +76,30 @@ class UserRoleEnum(str, Enum):
 class User(BaseModel):
     id: Optional[int] = None
     name: str
-    role: UserRoleEnum
+    hashed: str
     email: str
-    password: str
+    role: UserRoleEnum
     created_at: Optional[datetime] = None
-
+    updated_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
 
 class UserProfile(BaseModel):
     id: Optional[int] = None
     user_id: int
+    gender: GenderEnum
     phone_number: str
     created_at: Optional[datetime] = None
-    gender: GenderEnum
     updated_at: Optional[datetime] = None
-    status: ProfileStatusEnum
+    is_active: bool
     industry: IndustryEnum
+    status: ProfileStatusEnum
     description: str
-   
 
 
 class UserLogin(BaseModel):
     id: Optional[int] = None
     email: str
+    name: str
     password: str
     role: UserRoleEnum
 
@@ -129,8 +122,8 @@ class Venture(BaseModel):
 class Token(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
-    id: int | None = None
+    token_type: str
+    id: int
 
 
 class TokenData(BaseModel):

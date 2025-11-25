@@ -91,7 +91,7 @@ createStatements = {
         CREATE TABLE IF NOT EXISTS main.users (
             id SERIAL PRIMARY KEY,
             name VARCHAR(255),
-            password TEXT NOT NULL,
+            hashed TEXT NOT NULL,
             email VARCHAR(255) UNIQUE,
             role main.user_role NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
@@ -102,7 +102,7 @@ createStatements = {
     
     "user_profiles": """
         CREATE TABLE IF NOT EXISTS main.user_profiles (
-        		id SERIAL PRIMARY KEY,
+        	id SERIAL PRIMARY KEY,
             user_id INT UNIQUE, 
             FOREIGN KEY (user_id) REFERENCES main.users(id) ON DELETE CASCADE,
             gender main.gender NOT NULL, 
@@ -119,8 +119,8 @@ createStatements = {
 
 		"user_login": """
         CREATE TABLE IF NOT EXISTS main.user_login (
-        		id SERIAL PRIMARY KEY,
-            email VARCHAR(255) UNIQUE,
+        	id SERIAL PRIMARY KEY REFERENCES main.users(id) ON DELETE CASCADE,          
+			email VARCHAR(255) UNIQUE,
             name VARCHAR(255),
             password TEXT NOT NULL,
             role main.user_role NOT NULL
